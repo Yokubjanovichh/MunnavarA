@@ -6,6 +6,8 @@ import { computeAdaptiveYMax } from "./utils/yAxisScale";
 const USE_MOCK = String(import.meta.env.VITE_MOCK_SALES_ANALYTICS) === "true";
 const USE_MOCK_FALLBACK =
   String(import.meta.env.VITE_MOCK_SALES_ANALYTICS_FALLBACK) === "true";
+const AUTO_MOCK_IF_NO_API =
+  import.meta.env.PROD && !String(import.meta.env.VITE_API_URL || "").trim();
 
 function startOfDay(d) {
   const x = new Date(d);
@@ -326,7 +328,7 @@ export default function useSalesAnalytics() {
       try {
         const generated = buildIntervals(meta);
 
-        if (USE_MOCK) {
+        if (USE_MOCK || AUTO_MOCK_IF_NO_API) {
           await sleep(260, ac.signal);
           const mock = getMockSalesAnalytics(meta, generated);
 

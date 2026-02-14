@@ -14,3 +14,11 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Vercel (Production)
+
+- **SPA routing (reload = 404)**: this repo includes [vercel.json](vercel.json) with a rewrite to `/index.html`.
+- **API base URL**: set `VITE_API_URL` in Vercel Project → Settings → Environment Variables.
+  - Example: `VITE_API_URL=https://your-backend-domain.com`
+  - Important: use **https** in production (otherwise browser may block mixed content).
+- **If you don’t have a backend yet** (demo mode): the dashboard analytics chart auto-falls back to mock data in production when `VITE_API_URL` is not set.
