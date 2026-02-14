@@ -16,11 +16,21 @@ export default function Login() {
 
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
+  const [cardsLoaded, setCardsLoaded] = useState([false, false, false]);
 
   const canSubmit = useMemo(
     () => login.trim().length > 0 && password.trim().length > 0,
     [login, password],
   );
+
+  const markCardLoaded = (index) => {
+    setCardsLoaded((prev) => {
+      if (prev[index]) return prev;
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+  };
 
   return (
     <div className={styles.shell}>
@@ -93,9 +103,29 @@ export default function Login() {
           </p>
 
           <div className={styles.cards}>
-            <img src={loginImg1} alt="Login Image 1" />
-            <img src={loginImg2} alt="Login Image 2" />
-            <img src={loginImg3} alt="Login Image 3" />
+            {[
+              { src: loginImg1, alt: "Login Image 1" },
+              { src: loginImg2, alt: "Login Image 2" },
+              { src: loginImg3, alt: "Login Image 3" },
+            ].map((img, index) => (
+              <div key={img.alt} className={styles.card}>
+                {!cardsLoaded[index] ? (
+                  <div className={styles.skeleton} aria-hidden="true" />
+                ) : null}
+                <img
+                  className={`${styles.cardImg} ${
+                    cardsLoaded[index]
+                      ? styles.cardImgVisible
+                      : styles.cardImgHidden
+                  }`}
+                  src={img.src}
+                  alt={img.alt}
+                  decoding="async"
+                  onLoad={() => markCardLoaded(index)}
+                  onError={() => markCardLoaded(index)}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </section>
