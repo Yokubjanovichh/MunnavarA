@@ -1,0 +1,183 @@
+.root {
+  position: relative;
+  display: inline-block;
+}
+
+.inputBtn {
+  height: 40px;
+  min-width: 270px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #092c4c;
+  cursor: pointer;
+}
+
+.inputBtn:focus {
+  outline: none;
+  border-color: #092c4c;
+}
+
+.inputIcon {
+  flex: 0 0 auto;
+}
+
+.inputText {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  z-index: 40;
+  width: 560px;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.dropdownRight {
+  right: 0;
+}
+
+.dropdownLeft {
+  left: 0;
+}
+
+.leftPanel {
+  border-right: 1px solid #e5e7eb;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.rightPanel {
+  padding: 12px;
+}
+
+.presets {
+  display: grid;
+  gap: 6px;
+}
+
+.presetBtn {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  color: #111827;
+}
+
+.presetBtn:hover {
+  background: #f3f4f6;
+}
+
+.presetBtnActive {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.calendar {
+  display: grid;
+  gap: 10px;
+}
+
+.calTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.monthTitle {
+  font-weight: 700;
+  color: #111827;
+}
+
+.navBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  color: #111827;
+}
+
+.navBtn:hover {
+  background: #f3f4f6;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.sun {
+  color: #ef4444;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.dayBtn {
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 13px;
+  color: #111827;
+}
+
+.dayBtn:hover {
+  background: #f3f4f6;
+}
+
+.dayOutside {
+  opacity: 0.35;
+}
+
+.dayFaded {
+  opacity: 0.6;
+}
+
+.daySun {
+  color: #ef4444;
+}
+
+.dayInRange {
+  background: #e8f1ff;
+  border-color: #c7ddff;
+}
+
+.dayEdge {
+  background: #092c4c;
+  border-color: #092c4c;
+  color: #ffffff;
+}

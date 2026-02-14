@@ -1,0 +1,163 @@
+.shell {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.left {
+  background: #f3f4f6;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 64px 0 0 64px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.brandLogo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.brandMark {
+  width: 24px;
+}
+
+.brandText {
+  font-family: Nunito;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 100%;
+  letter-spacing: 0%;
+}
+
+.brandSub {
+  font-family: Poppins;
+  font-weight: 400;
+  font-style: Regular;
+  font-size: 9.75px;
+  line-height: 12.19px;
+  letter-spacing: 0%;
+  color: #535353;
+}
+
+.brandSub span {
+  font-weight: 700;
+}
+
+.content {
+  display: grid;
+  align-content: center;
+  align-items: flex-start;
+  justify-items: start;
+  gap: 12px;
+  max-width: 560px;
+  width: 100%;
+  padding-left: 64px;
+}
+
+.h1 {
+  font-family: Poppins;
+  font-weight: 400;
+  font-size: 64px;
+  line-height: 70px;
+  letter-spacing: 0%;
+}
+
+.h1Bold {
+  font-family: Poppins;
+  font-weight: 900;
+  font-size: 64px;
+  line-height: 70px;
+  letter-spacing: 0%;
+}
+
+.sub {
+  color: #6b7280;
+  max-width: 420px;
+}
+
+.form {
+  width: 100%;
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.label {
+  font-family: Poppins;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 20px;
+  letter-spacing: 0%;
+}
+
+.actions {
+  margin-top: 64px;
+}
+
+.submit {
+  width: 100%;
+}
+
+.right {
+  background: #0b0b0c;
+  color: #ffffff;
+  display: grid;
+  padding: 36px 127px;
+}
+
+.rightInner {
+  max-width: 500px;
+  display: grid;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+}
+
+.h2 {
+  max-width: 400px;
+  font-family: Poppins;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 48px;
+  letter-spacing: 0%;
+  text-align: center;
+  color: #ffffff;
+  margin: 0 auto;
+}
+
+.rightSub {
+  font-family: Poppins;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 30px;
+  letter-spacing: 0%;
+  text-align: center;
+  color: #ffffff99;
+}
+
+.cards {
+  margin-top: 32px;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  gap: 32px;
+}
+
+.cards img {
+  width: 100%;
+  max-width: 382px;
+}

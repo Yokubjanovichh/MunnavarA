@@ -1,0 +1,38 @@
+.input {
+  background: #ffffff;
+  outline: none;
+  font-weight: 400;
+  letter-spacing: 0%;
+  vertical-align: middle;
+  color: #212b36;
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.big {
+  height: 64px;
+  padding: 22px 24px;
+  font-size: 16px;
+  line-height: 20px;
+  border-radius: 24px;
+  border: none;
+}
+
+.big:focus {
+  outline: 1px solid #212b36;
+}
+
+.small {
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 21px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.small:focus {
+  border-color: #111827;
+}

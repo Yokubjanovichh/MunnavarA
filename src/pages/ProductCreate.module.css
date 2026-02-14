@@ -1,0 +1,252 @@
+.page {
+  display: grid;
+  gap: 14px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.crumb {
+  color: #6b7280;
+}
+
+.sep {
+  color: #9ca3af;
+}
+
+.crumbActive {
+  color: #111827;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.section {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  width: 100%;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.sectionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sectionIcon {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  color: #111827;
+  flex: 0 0 auto;
+}
+
+.sectionText {
+  font-weight: 700;
+  color: #111827;
+}
+
+.sectionRight {
+  color: #111827;
+  display: grid;
+  place-items: center;
+}
+
+.chevron {
+  transform: rotate(0deg);
+  transition: transform 160ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+  transition: transform 160ms ease;
+}
+
+.sectionBody {
+  border-top: 1px solid #eef2f7;
+  padding: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 18px;
+}
+
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.label {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 21px;
+  letter-spacing: 0%;
+  color: #212b36;
+}
+
+.select {
+  padding: 6px 12px;
+  padding-right: 36px;
+  font-size: 14px;
+  line-height: 20px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  outline: none;
+  color: #111827;
+  min-height: 32px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%23111827' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px 14px;
+}
+
+.select:focus {
+  border-color: #111827;
+}
+
+.photoWrap {
+  display: flex;
+}
+
+.fileInput {
+  display: none;
+}
+
+.dropzone {
+  width: 156px;
+  height: 156px;
+  border-radius: 14px;
+  border: 2px dashed #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.dropzone:hover {
+  background: #f9fafb;
+}
+
+.dropzone::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 16px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.dropzone::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 38px;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #111827;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.dropzone:hover::after,
+.dropzone:focus-visible::after,
+.dropzone:hover::before,
+.dropzone:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dropInner {
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  color: #6b7280;
+}
+
+.plus {
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+}
+
+.dropText {
+  font-size: 13px;
+}
+
+.preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.error {
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.success {
+  font-size: 13px;
+  color: #166534;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 2px;
+}

@@ -1,0 +1,49 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.5);
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.modal {
+  position: relative;
+  z-index: 1001;
+  width: 520px;
+  max-width: 100%;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  padding: 64px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 30px;
+  letter-spacing: 0px;
+  color: #181818;
+}
+
+.close {
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 18px;
+  background: none;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.close:active {
+  transform: scale(0.95);
+}

@@ -1,0 +1,168 @@
+.sidebar {
+  width: 288px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  color: #111827;
+  border-right: 1px solid #e5e7eb;
+}
+
+.brand {
+  padding: 14px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.brandLogo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.brandText {
+  font-family: Nunito;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 100%;
+  letter-spacing: 0%;
+}
+
+.brandMark {
+  width: 24px;
+  flex: 0 0 auto;
+}
+
+.brandSub {
+  font-family: Poppins;
+  font-weight: 400;
+  font-style: Regular;
+  font-size: 9.75px;
+  line-height: 12.19px;
+  letter-spacing: 0%;
+  color: #535353;
+  margin: 0;
+}
+
+.brandSub span {
+  font-weight: 700;
+}
+
+.scroll {
+  padding: 24px;
+  overflow: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.section {
+  padding-bottom: 8px;
+}
+
+.sectionTitle {
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0%;
+  vertical-align: middle;
+  color: #092c4c;
+}
+
+.nav {
+  display: grid;
+  gap: 4px;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  color: #111827;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.active {
+  background: #111827;
+  color: #ffffff;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.linkLabel {
+  font-weight: 500;
+  font-style: Medium;
+  font-size: 14px;
+  line-height: 21px;
+  letter-spacing: 0%;
+  vertical-align: middle;
+}
+
+.divider {
+  height: 1px;
+  background: #e6eaed;
+  margin: 10px 0;
+}
+
+.bottom {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 1399px) {
+  .sidebar {
+    width: 84px;
+  }
+
+  .brandLogo {
+    justify-content: center;
+  }
+
+  .brandText {
+    display: none;
+  }
+
+  .brandSub {
+    display: none;
+  }
+
+  .scroll {
+    padding: 12px 10px 0;
+  }
+
+  .sectionTitle {
+    display: none;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .linkLabel {
+    display: none;
+  }
+
+  .link {
+    justify-content: center;
+    padding: 10px;
+  }
+}

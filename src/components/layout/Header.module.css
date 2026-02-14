@@ -1,0 +1,173 @@
+.header {
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+}
+
+.search {
+  width: 280px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #6b7280;
+}
+
+.searchIcon {
+  flex: 0 0 auto;
+}
+
+.searchInput {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #111827;
+  font-size: 14px;
+}
+
+.searchInput::placeholder {
+  color: #9ca3af;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #e5e7eb;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.userDivider {
+  width: 1px;
+  height: 44px;
+  background: #e5e7eb;
+}
+
+.brand {
+  display: grid;
+  gap: 4px;
+  line-height: 1.1;
+}
+
+.brandTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandMark {
+  flex: 0 0 auto;
+}
+
+.brandName {
+  font-weight: 700;
+  font-size: 24px;
+  color: #111827;
+}
+
+.brandSub {
+  font-family: Montserrat;
+  font-weight: 400;
+  font-size: 6px;
+  line-height: 100%;
+  letter-spacing: 0%;
+  color: #000000b2;
+}
+
+.promo {
+  max-width: 202px;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0%;
+}
+
+.qr {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.qrCode {
+  width: 40px;
+  height: 40px;
+}
+
+.status {
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.statusDotOn {
+  background: #000000;
+}
+
+.statusDotOff {
+  background: #d1d5db;
+}
+
+@media (max-width: 1399px) {
+  .search {
+    width: 220px;
+  }
+
+  .promo {
+    display: none;
+  }
+
+  .brandName {
+    font-size: 18px;
+  }
+
+  .brandSub {
+    display: none;
+  }
+}
