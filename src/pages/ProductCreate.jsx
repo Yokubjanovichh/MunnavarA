@@ -2,7 +2,10 @@ import { useId, useMemo, useState } from "react";
 import styles from "./ProductCreate.module.css";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { useCreateProductMutation } from "@/services/catalogApi";
+import {
+  useCreateProductMutation,
+  useGetCatalogQuery,
+} from "@/services/catalogApi";
 
 function ChevronIcon({ open }) {
   return (
@@ -73,6 +76,16 @@ function Section({ title, icon, open, onToggle, children, contentId }) {
   );
 }
 
+function DotsSpinner({ label = "Yuklanmoqda" }) {
+  return (
+    <span className={styles.dots} role="status" aria-label={label}>
+      <span className={styles.dot} aria-hidden="true" />
+      <span className={`${styles.dot} ${styles.dot2}`} aria-hidden="true" />
+      <span className={`${styles.dot} ${styles.dot3}`} aria-hidden="true" />
+    </span>
+  );
+}
+
 export default function ProductCreate() {
   const [createProduct, { isLoading }] = useCreateProductMutation();
 
@@ -88,6 +101,17 @@ export default function ProductCreate() {
   const [type, setType] = useState("water");
   const [price, setPrice] = useState("");
 
+  const {
+    data: containerProducts,
+    isLoading: isContainersLoading,
+    isError: isContainersError,
+  } = useGetCatalogQuery(
+    { product_type: "container", skip: 0, limit: 100 },
+    { skip: type !== "water" },
+  );
+
+  const [selectedContainerId, setSelectedContainerId] = useState("");
+
   const materialOptions = useMemo(
     () => [
       { value: "PC", label: "PC" },
@@ -97,8 +121,6 @@ export default function ProductCreate() {
   );
 
   const [waterVolume, setWaterVolume] = useState("19");
-  const [waterMaterial, setWaterMaterial] = useState("PC");
-
   const [containerVolume, setContainerVolume] = useState("19");
   const [containerMaterial, setContainerMaterial] = useState("PC");
 
@@ -111,7 +133,23 @@ export default function ProductCreate() {
   const infoId = useId();
   const extraId = useId();
 
-  const canSubmit = useMemo(() => name.trim().length > 0, [name]);
+  const waterNeedsContainer = type === "water";
+  const hasContainers =
+    Array.isArray(containerProducts) && containerProducts.length > 0;
+  const canSubmit = useMemo(() => {
+    if (name.trim().length === 0) return false;
+    if (!waterNeedsContainer) return true;
+    if (isContainersLoading) return false;
+    if (!hasContainers) return false;
+    if (!selectedContainerId) return false;
+    return true;
+  }, [
+    name,
+    waterNeedsContainer,
+    isContainersLoading,
+    hasContainers,
+    selectedContainerId,
+  ]);
 
   const formatMoneySpaces = (raw) => {
     const digits = String(raw ?? "")
@@ -150,12 +188,7 @@ export default function ProductCreate() {
     if (!trimmedName) return;
 
     const parsedPrice = parseMoneyToInt(price);
-    if (parsedPrice === null) {
-      setError("Narx noto‘g‘ri kiritildi");
-      return;
-    }
-
-    const finalPrice = parsedPrice;
+    const finalPrice = parsedPrice === null ? 0 : parsedPrice;
 
     const waterLiters = type === "water" ? parseLiters(waterVolume) : null;
     const containerLiters =
@@ -164,6 +197,31 @@ export default function ProductCreate() {
     if (type === "water" && waterLiters === null) {
       setError("Hajm (litr) noto‘g‘ri kiritildi");
       return;
+    }
+
+    const selectedContainer =
+      type === "water" && Array.isArray(containerProducts)
+        ? containerProducts.find((p) => p?.id === selectedContainerId)
+        : null;
+
+    if (type === "water") {
+      if (isContainersLoading) {
+        setError("Tara ro‘yxati yuklanmoqda");
+        return;
+      }
+      if (!Array.isArray(containerProducts) || containerProducts.length === 0) {
+        setError("Avval tara (idish) yarating");
+        return;
+      }
+      if (!selectedContainerId || !selectedContainer) {
+        setError("Tara tanlang");
+        return;
+      }
+      const autoMaterial = selectedContainer?.attributes?.material;
+      if (!autoMaterial) {
+        setError("Tanlangan tarada material topilmadi");
+        return;
+      }
     }
 
     if (type === "container" && containerLiters === null) {
@@ -179,13 +237,15 @@ export default function ProductCreate() {
       };
 
       if (type === "water") {
+        const autoMaterial = selectedContainer?.attributes?.material;
         payload.attributes = {
-          volume_l: waterLiters,
-          material: waterMaterial,
+          volume: waterLiters,
+          material: autoMaterial,
         };
+        payload.returnable_item_id = selectedContainerId;
       } else if (type === "container") {
         payload.attributes = {
-          volume_l: containerLiters,
+          volume: containerLiters,
           material: containerMaterial,
         };
       }
@@ -240,6 +300,7 @@ export default function ProductCreate() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Mahsulot nomi"
                 size="small"
+                disabled={isLoading}
               />
             </label>
 
@@ -248,9 +309,11 @@ export default function ProductCreate() {
               <select
                 className={styles.select}
                 value={type}
+                disabled={isLoading}
                 onChange={(e) => {
                   const next = e.target.value;
                   setType(next);
+                  if (next !== "water") setSelectedContainerId("");
                 }}
               >
                 {productTypes.map((opt) => (
@@ -260,6 +323,56 @@ export default function ProductCreate() {
                 ))}
               </select>
             </label>
+
+            {type === "water" ? (
+              <label className={styles.field}>
+                <div className={styles.label}>Tara (idish)</div>
+                <select
+                  className={styles.select}
+                  value={selectedContainerId}
+                  onChange={(e) => setSelectedContainerId(e.target.value)}
+                  disabled={isContainersLoading || isLoading}
+                >
+                  <option value="" disabled>
+                    {isContainersLoading
+                      ? "Yuklanmoqda..."
+                      : hasContainers
+                        ? "Tara tanlang"
+                        : "Tara topilmadi"}
+                  </option>
+                  {(Array.isArray(containerProducts)
+                    ? containerProducts
+                    : []
+                  ).map((p) => {
+                    const material = p?.attributes?.material;
+                    const volume =
+                      p?.attributes?.volume ?? p?.attributes?.volume_l ?? null;
+                    const suffix =
+                      volume || material
+                        ? ` (${[volume ? `${volume}L` : null, material]
+                            .filter(Boolean)
+                            .join(" ")})`
+                        : "";
+                    return (
+                      <option key={p?.id} value={p?.id}>
+                        {p?.name || p?.id}
+                        {suffix}
+                      </option>
+                    );
+                  })}
+                </select>
+                {isContainersError ? (
+                  <div className={styles.helper}>
+                    Tara ro‘yxatini olishda xatolik yuz berdi
+                  </div>
+                ) : !isContainersLoading && !hasContainers ? (
+                  <div className={styles.helper}>
+                    Suv yaratish uchun avval tara (idish) yaratilgan bo‘lishi
+                    kerak
+                  </div>
+                ) : null}
+              </label>
+            ) : null}
 
             <label className={styles.field}>
               <div className={styles.label}>Narx</div>
@@ -274,6 +387,7 @@ export default function ProductCreate() {
                 placeholder="0"
                 inputMode="numeric"
                 size="small"
+                disabled={isLoading}
               />
             </label>
           </div>
@@ -300,22 +414,8 @@ export default function ProductCreate() {
                   placeholder="Masalan: 19"
                   inputMode="decimal"
                   size="small"
+                  disabled={isLoading}
                 />
-              </label>
-
-              <label className={styles.field}>
-                <div className={styles.label}>Tara materiali</div>
-                <select
-                  className={styles.select}
-                  value={waterMaterial}
-                  onChange={(e) => setWaterMaterial(e.target.value)}
-                >
-                  {materialOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
               </label>
             </div>
           ) : type === "container" ? (
@@ -332,6 +432,7 @@ export default function ProductCreate() {
                   placeholder="Masalan: 19"
                   inputMode="decimal"
                   size="small"
+                  disabled={isLoading}
                 />
               </label>
 
@@ -340,6 +441,7 @@ export default function ProductCreate() {
                 <select
                   className={styles.select}
                   value={containerMaterial}
+                  disabled={isLoading}
                   onChange={(e) => setContainerMaterial(e.target.value)}
                 >
                   {materialOptions.map((opt) => (
@@ -358,13 +460,26 @@ export default function ProductCreate() {
         </Section>
 
         {error ? <div className={styles.error}>{error}</div> : null}
+        {isLoading ? (
+          <div className={styles.helper} aria-live="polite">
+            Saqlanmoqda
+            <DotsSpinner label="Saqlanmoqda" />
+          </div>
+        ) : null}
         {success ? (
           <div className={styles.success}>Mahsulot saqlandi</div>
         ) : null}
 
         <div className={styles.actions}>
           <Button type="submit" disabled={!canSubmit || isLoading}>
-            Mahsulot kiritish
+            {isLoading ? (
+              <>
+                Saqlanmoqda
+                <DotsSpinner label="Saqlanmoqda" />
+              </>
+            ) : (
+              "Mahsulot kiritish"
+            )}
           </Button>
         </div>
       </form>
