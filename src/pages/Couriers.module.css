@@ -120,9 +120,14 @@
   font-weight: 500;
 }
 
-.thDate,
-.tdDate {
-  width: 210px;
+.thInventory,
+.tdInventory {
+  width: 220px;
+}
+
+.thBalance,
+.tdBalance {
+  width: 170px;
 }
 
 .thOrdersDone,
@@ -133,6 +138,27 @@
 .thPhone,
 .tdPhone {
   width: 190px;
+}
+
+.thActive,
+.tdActive {
+  width: 20px;
+  text-align: center;
+}
+
+.statusDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.statusGreen {
+  background: #22c55e;
+}
+
+.statusRed {
+  background: #dc2626;
 }
 
 .thPassword,
@@ -148,7 +174,7 @@
 
 .thActions,
 .tdActions {
-  width: 110px;
+  width: 70px;
   text-align: right;
   padding-right: 18px;
 }
@@ -161,6 +187,63 @@
 
 .tdMuted {
   color: #6b7280;
+}
+
+.skeletonBar {
+  height: 12px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  animation: skeletonPulse 1.2s ease-in-out infinite;
+}
+
+.skeletonName {
+  width: 70%;
+}
+
+.skeletonInventory {
+  width: 62%;
+}
+
+.skeletonBalance {
+  width: 48%;
+}
+
+.skeletonPhone {
+  width: 66%;
+}
+
+.skeletonDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  animation: skeletonPulse 1.2s ease-in-out infinite;
+}
+
+.skeletonActions {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.skeletonIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #e5e7eb;
+  animation: skeletonPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .actions {
@@ -315,10 +398,6 @@
   cursor: pointer;
 }
 
-.pageBtn:hover {
-  background: #f9fafb;
-}
-
 .pageBtnActive {
   background: #111827;
   border-color: #111827;
@@ -447,6 +526,13 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 22px;
+}
+
+.apiNote {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 18px;
+  color: #6b7280;
 }
 
 .formSubmit {

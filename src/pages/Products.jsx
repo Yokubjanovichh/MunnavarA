@@ -1,10 +1,54 @@
 import { useMemo, useState } from "react";
 
 import styles from "./Products.module.css";
-import product from "../assets/images/munavaraA product.jpg";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import {
+  useArchiveProductMutation,
+  useGetCatalogQuery,
+  useUpdateProductMutation,
+} from "@/services/catalogApi";
+
+function ChevronLeft() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12.5 15L7.5 10L12.5 5"
+        stroke="#111827"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ChevronRight() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M7.5 5L12.5 10L7.5 15"
+        stroke="#111827"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function SortIcon() {
   return (
@@ -68,158 +112,289 @@ function TrashIcon() {
   );
 }
 
-function ChevronLeft() {
-  return (
-    <svg
-      width="5"
-      height="9"
-      viewBox="0 0 5 9"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M4.5 0.5L0.5 4.5L4.5 8.5"
-        stroke="#646B72"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function formatMoneySpaces(value) {
+  const digits = String(value ?? "").replace(/\D+/g, "");
+  if (!digits) return "0";
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
-function ChevronRight() {
-  return (
-    <svg
-      width="5"
-      height="9"
-      viewBox="0 0 5 9"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M0.5 0.5L4.5 4.5L0.5 8.5"
-        stroke="#646B72"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function parseMoneyToInt(raw) {
+  const digits = String(raw ?? "")
+    .replace(/\s+/g, "")
+    .replace(/\D+/g, "");
+  if (!digits) return 0;
+  const x = Number.parseInt(digits, 10);
+  return Number.isFinite(x) ? x : 0;
 }
 
-function ProductThumb({ src }) {
-  return (
-    <div className={styles.thumb} aria-hidden="true">
-      <img src={src} alt="Product" />
-    </div>
-  );
+function parseLiters(raw) {
+  const s = String(raw ?? "")
+    .trim()
+    .replace(",", ".");
+  if (!s) return null;
+  const x = Number.parseFloat(s);
+  if (!Number.isFinite(x)) return null;
+  if (x < 0) return null;
+  return x;
+}
+
+function sameNumber(a, b) {
+  if (a === null && b === null) return true;
+  if (typeof a !== "number" || typeof b !== "number") return false;
+  return Math.abs(a - b) < 1e-9;
+}
+
+function typeLabel(type) {
+  if (type === "water") return "Suv";
+  if (type === "container") return "Tara";
+  if (type === "equipment") return "Uskuna";
+  return type || "—";
+}
+
+function getVolume(attributes) {
+  const v = attributes?.volume ?? attributes?.volume_l ?? null;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+function formatVolume(attributes) {
+  const v = getVolume(attributes);
+  return v === null ? "—" : `${v} L`;
 }
 
 export default function Products() {
-  const initialRows = useMemo(
-    () =>
-      Array.from({ length: 10 }).map((_, i) => ({
-        id: 123182,
-        name: "Suv 25 litr",
-        createdAt: [
-          "24 Dec 2024",
-          "10 Dec 2024",
-          "27 Nov 2024",
-          "18 Nov 2024",
-          "06 Nov 2024",
-          "25 Oct 2024",
-          "14 Oct 2024",
-          "03 Oct 2024",
-          "20 Sep 2024",
-          "10 Sep 2024",
-        ][i],
-        size: "25-L",
-        qty: "100-Dona",
-        imageUrl: product,
-      })),
+  const [perPage, setPerPage] = useState(10);
+  const [page, setPage] = useState(1);
+  const skip = (page - 1) * perPage;
+  const skeletonCount = Math.min(perPage, 10);
+
+  const {
+    data: products,
+    isLoading,
+    isError,
+  } = useGetCatalogQuery({ skip, limit: perPage });
+
+  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
+  const [archiveProduct, { isLoading: isArchiving }] =
+    useArchiveProductMutation();
+
+  const rows = Array.isArray(products) ? products : [];
+
+  const hasNextPage = !isLoading && !isError && rows.length === perPage;
+  const pages = useMemo(() => {
+    const result = [];
+    if (page > 1) result.push(page - 1);
+    result.push(page);
+    if (hasNextPage) result.push(page + 1);
+    return result;
+  }, [page, hasNextPage]);
+
+  const productTypes = useMemo(
+    () => [
+      { value: "water", label: "Suv" },
+      { value: "container", label: "Tara" },
+      { value: "equipment", label: "Uskuna" },
+    ],
     [],
   );
 
-  const [rows, setRows] = useState(initialRows);
-
-  const [selected, setSelected] = useState(() => new Set());
-  const [perPage, setPerPage] = useState(10);
-  const [page, setPage] = useState(4);
-
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteKey, setDeleteKey] = useState(null);
-  const [deleteId, setDeleteId] = useState(null);
+  const materialOptions = useMemo(
+    () => [
+      { value: "PC", label: "PC" },
+      { value: "PET", label: "PET" },
+    ],
+    [],
+  );
 
   const [editOpen, setEditOpen] = useState(false);
-  const [editKey, setEditKey] = useState(null);
-  const [editId, setEditId] = useState(null);
+  const [editProductId, setEditProductId] = useState(null);
   const [editName, setEditName] = useState("");
-  const [editSize, setEditSize] = useState("");
-  const [editQty, setEditQty] = useState("");
-  const [editImageUrl, setEditImageUrl] = useState(product);
-
-  const allSelected = selected.size === rows.length && rows.length > 0;
-
-  const toggleAll = () => {
-    setSelected((prev) => {
-      if (prev.size === rows.length) return new Set();
-      return new Set(rows.map((r) => r.id + "-" + r.createdAt));
-    });
-  };
-
-  const toggleRow = (rowKey) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(rowKey)) next.delete(rowKey);
-      else next.add(rowKey);
-      return next;
-    });
-  };
-
-  const totalPages = 15;
-  const pages = [1, 2, 3, 4, "ellipsis", totalPages];
+  const [editType, setEditType] = useState("water");
+  const [editPrice, setEditPrice] = useState("0");
+  const [editVolume, setEditVolume] = useState("");
+  const [editMaterial, setEditMaterial] = useState("PC");
+  const [editContainerId, setEditContainerId] = useState("");
+  const [editError, setEditError] = useState(null);
+  const [editInitial, setEditInitial] = useState(null);
 
   const closeEdit = () => {
     setEditOpen(false);
-    setEditKey(null);
-    setEditId(null);
+    setEditProductId(null);
     setEditName("");
-    setEditSize("");
-    setEditQty("");
-    setEditImageUrl(product);
+    setEditType("water");
+    setEditPrice("0");
+    setEditVolume("");
+    setEditMaterial("PC");
+    setEditContainerId("");
+    setEditError(null);
+    setEditInitial(null);
   };
 
-  const handlePickImage = (file) => {
-    if (!file) return;
-    if (!file.type?.startsWith("image/")) return;
+  const {
+    data: containerProducts,
+    isLoading: isContainersLoading,
+    isError: isContainersError,
+  } = useGetCatalogQuery(
+    { product_type: "container", skip: 0, limit: 100 },
+    { skip: !(editOpen && editType === "water") },
+  );
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") setEditImageUrl(result);
+  const selectedContainer =
+    editType === "water" && Array.isArray(containerProducts)
+      ? containerProducts.find((p) => p?.id === editContainerId)
+      : null;
+
+  const openEdit = (product) => {
+    setEditError(null);
+    const initialProductId = product?.id ?? null;
+    const initialName = product?.name ?? "";
+    const initialType = product?.type ?? "water";
+    const initialPriceInt = Number(product?.price ?? 0) || 0;
+    const initialVolume = getVolume(product?.attributes);
+    const initialMaterial = product?.attributes?.material ?? "PC";
+    const initialContainerId = product?.returnable_item_id ?? "";
+
+    setEditProductId(initialProductId);
+    setEditName(initialName);
+    setEditType(initialType);
+    setEditPrice(formatMoneySpaces(initialPriceInt));
+    setEditVolume(initialVolume === null ? "" : String(initialVolume));
+    setEditMaterial(initialMaterial);
+    setEditContainerId(initialContainerId);
+    setEditInitial({
+      productId: initialProductId,
+      name: String(initialName),
+      type: String(initialType),
+      priceInt: initialPriceInt,
+      volume: initialVolume,
+      material: String(initialMaterial),
+      containerId: String(initialContainerId),
+    });
+    setEditOpen(true);
+  };
+
+  const hasEditChanges = useMemo(() => {
+    if (!editOpen) return false;
+    if (!editInitial) return false;
+    if (!editProductId) return false;
+
+    const currentName = editName;
+    const currentType = editType;
+    const currentPriceInt = parseMoneyToInt(editPrice);
+    const currentVolume = parseLiters(editVolume);
+    const currentMaterial = editMaterial;
+    const currentContainerId = editContainerId;
+
+    if (String(currentName) !== String(editInitial.name)) return true;
+    if (String(currentType) !== String(editInitial.type)) return true;
+    if (currentPriceInt !== editInitial.priceInt) return true;
+
+    if (currentType === "water") {
+      if (String(currentContainerId) !== String(editInitial.containerId))
+        return true;
+      if (!sameNumber(currentVolume, editInitial.volume)) return true;
+      return false;
+    }
+
+    if (currentType === "container") {
+      if (!sameNumber(currentVolume, editInitial.volume)) return true;
+      if (String(currentMaterial) !== String(editInitial.material)) return true;
+      return false;
+    }
+
+    // equipment
+    return false;
+  }, [
+    editOpen,
+    editInitial,
+    editProductId,
+    editName,
+    editType,
+    editPrice,
+    editVolume,
+    editMaterial,
+    editContainerId,
+  ]);
+
+  const onSaveEdit = async () => {
+    setEditError(null);
+
+    const trimmedName = editName.trim();
+    if (!editProductId) return;
+    if (!trimmedName) {
+      setEditError("Mahsulot nomini kiriting");
+      return;
+    }
+
+    const nextPrice = parseMoneyToInt(editPrice);
+
+    const body = {
+      name: trimmedName,
+      type: editType,
+      price: nextPrice,
     };
-    reader.readAsDataURL(file);
+
+    if (editType === "water") {
+      if (isContainersLoading) {
+        setEditError("Tara ro‘yxati yuklanmoqda");
+        return;
+      }
+      if (!Array.isArray(containerProducts) || containerProducts.length === 0) {
+        setEditError("Avval tara (idish) yarating");
+        return;
+      }
+      if (!editContainerId || !selectedContainer) {
+        setEditError("Tara tanlang");
+        return;
+      }
+      const liters = parseLiters(editVolume);
+      if (liters === null) {
+        setEditError("Hajm (litr) noto‘g‘ri kiritildi");
+        return;
+      }
+      const autoMaterial = selectedContainer?.attributes?.material;
+      if (!autoMaterial) {
+        setEditError("Tanlangan tarada material topilmadi");
+        return;
+      }
+      body.attributes = { volume: liters, material: autoMaterial };
+      body.returnable_item_id = editContainerId;
+    }
+
+    if (editType === "container") {
+      const liters = parseLiters(editVolume);
+      if (liters === null) {
+        setEditError("Hajm (litr) noto‘g‘ri kiritildi");
+        return;
+      }
+      body.attributes = { volume: liters, material: editMaterial };
+    }
+
+    try {
+      await updateProduct({ product_id: editProductId, body }).unwrap();
+      closeEdit();
+    } catch (e) {
+      console.warn("updateProduct failed", e);
+      setEditError("Saqlashda xatolik yuz berdi");
+    }
   };
 
-  const handleEditSave = () => {
-    const nextName = editName.trim();
-    if (!nextName) return;
-    if (!editKey) return;
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteProductId, setDeleteProductId] = useState(null);
 
-    setRows((prev) =>
-      prev.map((row) => {
-        const rowKey = row.id + "-" + row.createdAt;
-        if (rowKey !== editKey) return row;
-        return {
-          ...row,
-          name: nextName,
-          size: editSize,
-          qty: editQty,
-          imageUrl: editImageUrl,
-        };
-      }),
-    );
+  const closeDelete = () => {
+    setDeleteOpen(false);
+    setDeleteProductId(null);
+  };
 
-    closeEdit();
+  const onConfirmDelete = async () => {
+    if (!deleteProductId) return;
+    try {
+      await archiveProduct(deleteProductId).unwrap();
+      closeDelete();
+    } catch (e) {
+      console.warn("archiveProduct failed", e);
+      closeDelete();
+    }
   };
 
   return (
@@ -253,57 +428,72 @@ export default function Products() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th className={styles.thCheck}>
-                  <input
-                    className={styles.checkbox}
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                    aria-label="Select all"
-                  />
-                </th>
-                <th className={styles.thId}>
-                  <span className={styles.thInner}>
-                    Mahsulot ID <SortIcon />
-                  </span>
-                </th>
                 <th className={styles.thName}>Mahsulot nomi</th>
-                <th className={styles.thDate}>
+                <th className={styles.thType}>
                   <span className={styles.thInner}>
-                    Yaratilgan sanasi <SortIcon />
+                    Turi <SortIcon />
                   </span>
                 </th>
-                <th className={styles.thSize}>Hajmi litrda</th>
-                <th className={styles.thQty}>Miqdor</th>
+                <th className={styles.thVolume}>Hajmi</th>
+                <th className={styles.thPrice}>Narxi</th>
                 <th className={styles.thActions} aria-hidden="true" />
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => {
-                const rowKey = r.id + "-" + r.createdAt;
-                const isSelected = selected.has(rowKey);
-
-                return (
-                  <tr key={rowKey} className={styles.tr}>
-                    <td className={styles.tdCheck}>
-                      <input
-                        className={styles.checkbox}
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleRow(rowKey)}
-                        aria-label="Select row"
+              {isLoading ? (
+                Array.from({ length: skeletonCount }).map((_, i) => (
+                  <tr key={`sk-${i}`} className={styles.tr}>
+                    <td className={styles.tdName}>
+                      <div
+                        className={`${styles.skeletonBar} ${styles.skeletonName}`}
                       />
                     </td>
-                    <td className={styles.tdId}>{r.id}</td>
-                    <td className={styles.tdName}>
-                      <div className={styles.nameCell}>
-                        <ProductThumb src={r.imageUrl || product} />
-                        <span className={styles.nameText}>{r.name}</span>
+                    <td className={styles.tdType}>
+                      <div
+                        className={`${styles.skeletonBar} ${styles.skeletonType}`}
+                      />
+                    </td>
+                    <td className={styles.tdVolume}>
+                      <div
+                        className={`${styles.skeletonBar} ${styles.skeletonVolume}`}
+                      />
+                    </td>
+                    <td className={styles.tdPrice}>
+                      <div
+                        className={`${styles.skeletonBar} ${styles.skeletonPrice}`}
+                      />
+                    </td>
+                    <td className={styles.tdActions}>
+                      <div className={styles.skeletonActions}>
+                        <div className={styles.skeletonIcon} />
+                        <div className={styles.skeletonIcon} />
                       </div>
                     </td>
-                    <td className={styles.tdDate}>{r.createdAt}</td>
-                    <td className={styles.tdSize}>{r.size}</td>
-                    <td className={styles.tdQty}>{r.qty}</td>
+                  </tr>
+                ))
+              ) : isError ? (
+                <tr className={styles.tr}>
+                  <td className={styles.state} colSpan={5}>
+                    Xatolik yuz berdi (login/scopes yoki CORS bo‘lishi mumkin)
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
+                <tr className={styles.tr}>
+                  <td className={styles.state} colSpan={5}>
+                    Hozircha mahsulot yo‘q
+                  </td>
+                </tr>
+              ) : (
+                rows.map((r) => (
+                  <tr key={r?.id} className={styles.tr}>
+                    <td className={styles.tdName}>{r?.name || "—"}</td>
+                    <td className={styles.tdType}>{typeLabel(r?.type)}</td>
+                    <td className={styles.tdVolume}>
+                      {formatVolume(r?.attributes)}
+                    </td>
+                    <td className={styles.tdPrice}>
+                      {formatMoneySpaces(r?.price)}
+                    </td>
                     <td className={styles.tdActions}>
                       <div className={styles.actions}>
                         <button
@@ -311,15 +501,7 @@ export default function Products() {
                           className={styles.iconBtn}
                           aria-label="Edit"
                           data-tooltip="Tahrirlash"
-                          onClick={() => {
-                            setEditKey(rowKey);
-                            setEditId(r.id);
-                            setEditName(r.name ?? "");
-                            setEditSize(r.size ?? "");
-                            setEditQty(r.qty ?? "");
-                            setEditImageUrl(r.imageUrl || product);
-                            setEditOpen(true);
-                          }}
+                          onClick={() => openEdit(r)}
                         >
                           <EditIcon />
                         </button>
@@ -329,8 +511,7 @@ export default function Products() {
                           aria-label="Delete"
                           data-tooltip="O'chirish"
                           onClick={() => {
-                            setDeleteKey(rowKey);
-                            setDeleteId(r.id);
+                            setDeleteProductId(r?.id);
                             setDeleteOpen(true);
                           }}
                         >
@@ -339,8 +520,8 @@ export default function Products() {
                       </div>
                     </td>
                   </tr>
-                );
-              })}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -351,7 +532,11 @@ export default function Products() {
             <select
               className={styles.select}
               value={perPage}
-              onChange={(e) => setPerPage(Number(e.target.value))}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                setPerPage(next);
+                setPage(1);
+              }}
               aria-label="Rows per page"
             >
               <option value={10}>10</option>
@@ -366,38 +551,33 @@ export default function Products() {
               type="button"
               className={styles.navBtn}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
+              disabled={isLoading || page <= 1}
               aria-label="Previous page"
             >
               <ChevronLeft />
             </button>
 
-            {pages.map((p, idx) =>
-              p === "ellipsis" ? (
-                <span key={`e-${idx}`} className={styles.ellipsis}>
-                  …
-                </span>
-              ) : (
-                <button
-                  key={p}
-                  type="button"
-                  className={
-                    p === page
-                      ? `${styles.pageBtn} ${styles.pageBtnActive}`
-                      : styles.pageBtn
-                  }
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </button>
-              ),
-            )}
+            {pages.map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={
+                  p === page
+                    ? `${styles.pageBtn} ${styles.pageBtnActive}`
+                    : styles.pageBtn
+                }
+                onClick={() => setPage(p)}
+                disabled={isLoading || p === page}
+              >
+                {p}
+              </button>
+            ))}
 
             <button
               type="button"
               className={styles.navBtn}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              disabled={isLoading || !hasNextPage}
               aria-label="Next page"
             >
               <ChevronRight />
@@ -413,74 +593,203 @@ export default function Products() {
         className={styles.editModal}
         headerClassName={styles.editHeader}
       >
-        <div className={styles.editGrid}>
-          <div className={styles.imageBlock}>
-            <div className={styles.imagePreview}>
-              <img src={editImageUrl || product} alt="Preview" />
-            </div>
-            <label className={styles.uploadBtn}>
-              Rasm tanlash
-              <input
-                type="file"
-                accept="image/*"
-                className={styles.fileInput}
-                onChange={(e) => handlePickImage(e.target.files?.[0])}
-              />
-            </label>
-          </div>
+        <div className={styles.fields}>
+          <label className={styles.field}>
+            <span className={styles.label}>Mahsulot nomi</span>
+            <Input
+              size="small"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              disabled={isUpdating}
+            />
+          </label>
 
-          <div className={styles.fields}>
+          <div className={styles.row2}>
             <label className={styles.field}>
-              <span className={styles.label}>Mahsulot nomi</span>
+              <span className={styles.label}>Turi</span>
+              <select
+                className={styles.select}
+                value={editType}
+                disabled={isUpdating}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setEditType(next);
+                  setEditError(null);
+                  if (next !== "water") setEditContainerId("");
+                }}
+              >
+                {productTypes.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className={styles.field}>
+              <span className={styles.label}>Narx</span>
               <Input
                 size="small"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                value={editPrice}
+                onChange={(e) => {
+                  const next = String(e.target.value ?? "");
+                  const digits = next.replace(/\s+/g, "").replace(/\D+/g, "");
+                  setEditPrice(formatMoneySpaces(digits));
+                }}
+                onBlur={() => setEditPrice((v) => formatMoneySpaces(v) || "0")}
+                inputMode="numeric"
+                disabled={isUpdating}
               />
             </label>
+          </div>
 
+          {editType === "water" ? (
+            <>
+              <div className={styles.row2}>
+                <label className={styles.field}>
+                  <span className={styles.label}>Tara (idish)</span>
+                  <select
+                    className={styles.select}
+                    value={editContainerId}
+                    disabled={isUpdating || isContainersLoading}
+                    onChange={(e) => setEditContainerId(e.target.value)}
+                  >
+                    <option value="" disabled>
+                      {isContainersLoading
+                        ? "Yuklanmoqda..."
+                        : Array.isArray(containerProducts) &&
+                            containerProducts.length > 0
+                          ? "Tara tanlang"
+                          : "Tara topilmadi"}
+                    </option>
+
+                    {editContainerId &&
+                    Array.isArray(containerProducts) &&
+                    !containerProducts.some(
+                      (p) => p?.id === editContainerId,
+                    ) ? (
+                      <option value={editContainerId}>
+                        Hozirgi tara (topilmadi)
+                      </option>
+                    ) : null}
+
+                    {(Array.isArray(containerProducts)
+                      ? containerProducts
+                      : []
+                    ).map((p) => {
+                      const material = p?.attributes?.material;
+                      const volume =
+                        p?.attributes?.volume ??
+                        p?.attributes?.volume_l ??
+                        null;
+                      const suffix =
+                        volume || material
+                          ? ` (${[volume ? `${volume}L` : null, material]
+                              .filter(Boolean)
+                              .join(" ")})`
+                          : "";
+                      return (
+                        <option key={p?.id} value={p?.id}>
+                          {p?.name || p?.id}
+                          {suffix}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {isContainersError ? (
+                    <div className={styles.helper}>
+                      Tara ro‘yxatini olishda xatolik yuz berdi
+                    </div>
+                  ) : null}
+                </label>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Hajmi (litr)</span>
+                  <Input
+                    size="small"
+                    value={editVolume}
+                    onChange={(e) => {
+                      const next = String(e.target.value ?? "");
+                      const cleaned = next.replace(/[^\d.,]/g, "");
+                      setEditVolume(cleaned);
+                    }}
+                    inputMode="decimal"
+                    disabled={isUpdating}
+                  />
+                </label>
+              </div>
+
+              <div className={styles.helper}>
+                Material avtomatik:{" "}
+                {selectedContainer?.attributes?.material || "—"}
+              </div>
+            </>
+          ) : editType === "container" ? (
             <div className={styles.row2}>
               <label className={styles.field}>
-                <span className={styles.label}>Hajmi</span>
+                <span className={styles.label}>Hajmi (litr)</span>
                 <Input
                   size="small"
-                  value={editSize}
-                  onChange={(e) => setEditSize(e.target.value)}
+                  value={editVolume}
+                  onChange={(e) => {
+                    const next = String(e.target.value ?? "");
+                    const cleaned = next.replace(/[^\d.,]/g, "");
+                    setEditVolume(cleaned);
+                  }}
+                  inputMode="decimal"
+                  disabled={isUpdating}
                 />
               </label>
 
               <label className={styles.field}>
-                <span className={styles.label}>Miqdor</span>
-                <Input
-                  size="small"
-                  value={editQty}
-                  onChange={(e) => setEditQty(e.target.value)}
-                />
+                <span className={styles.label}>Material</span>
+                <select
+                  className={styles.select}
+                  value={editMaterial}
+                  disabled={isUpdating}
+                  onChange={(e) => setEditMaterial(e.target.value)}
+                >
+                  {materialOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
+          ) : null}
+
+          {editError ? (
+            <div className={styles.confirmText}>{editError}</div>
+          ) : null}
+
+          <div className={styles.editFooter}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="small"
+              className={`${styles.editBtn} ${styles.editCancel}`}
+              onClick={closeEdit}
+              disabled={isUpdating}
+            >
+              Bekor qilish
+            </Button>
+
+            <Button
+              type="button"
+              size="small"
+              className={`${styles.editBtn} ${styles.editSubmit}`}
+              onClick={onSaveEdit}
+              disabled={
+                !editName.trim() ||
+                !editProductId ||
+                isUpdating ||
+                !hasEditChanges
+              }
+            >
+              {isUpdating ? "Saqlanmoqda..." : "Saqlash"}
+            </Button>
           </div>
-        </div>
-
-        <div className={styles.editFooter}>
-          <Button
-            type="button"
-            variant="secondary"
-            size="small"
-            className={`${styles.editBtn} ${styles.editCancel}`}
-            onClick={closeEdit}
-          >
-            Bekor qilish
-          </Button>
-
-          <Button
-            type="button"
-            size="small"
-            className={`${styles.editBtn} ${styles.editSubmit}`}
-            onClick={handleEditSave}
-            disabled={!editName.trim() || !editId}
-          >
-            Saqlash
-          </Button>
         </div>
       </Modal>
 
@@ -488,15 +797,11 @@ export default function Products() {
         open={deleteOpen}
         title="Mahsulotni o'chirish"
         showClose={false}
-        onClose={() => {
-          setDeleteOpen(false);
-          setDeleteKey(null);
-          setDeleteId(null);
-        }}
+        onClose={closeDelete}
         className={styles.confirmModal}
       >
         <div className={styles.confirmText}>
-          Siz {deleteId} ushu mahsulotni o'chirmoqchisiz
+          Siz ushbu mahsulotni o'chirmoqchimisiz?
         </div>
 
         <div className={styles.confirmFooter}>
@@ -504,11 +809,9 @@ export default function Products() {
             type="button"
             variant="secondary"
             size="small"
-            onClick={() => {
-              setDeleteOpen(false);
-              setDeleteKey(null);
-              setDeleteId(null);
-            }}
+            className={styles.confirmBtn}
+            onClick={closeDelete}
+            disabled={isArchiving}
           >
             Bekor qilish
           </Button>
@@ -516,24 +819,11 @@ export default function Products() {
           <Button
             type="button"
             size="small"
-            onClick={() => {
-              if (deleteKey) {
-                setRows((prev) =>
-                  prev.filter((rr) => rr.id + "-" + rr.createdAt !== deleteKey),
-                );
-                setSelected((prev) => {
-                  const next = new Set(prev);
-                  next.delete(deleteKey);
-                  return next;
-                });
-              }
-
-              setDeleteOpen(false);
-              setDeleteKey(null);
-              setDeleteId(null);
-            }}
+            className={styles.confirmBtn}
+            onClick={onConfirmDelete}
+            disabled={!deleteProductId || isArchiving}
           >
-            O'chirish
+            {isArchiving ? "O'chirilmoqda..." : "O'chirish"}
           </Button>
         </div>
       </Modal>

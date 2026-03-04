@@ -108,21 +108,26 @@
         ]
       }
     },
-    "/api/v1/backoffice/users/": {
+    "/api/v1/backoffice/couriers/": {
       "post": {
-        "tags": ["Backoffice | Users"],
-        "summary": "Создать нового сотрудника или пользователя",
-        "description": "Создание пользователя вручную через админ-панель.",
-        "operationId": "create_user_api_v1_backoffice_users__post",
+        "tags": ["Backoffice | Couriers"],
+        "summary": "Зарегистрировать нового курьера",
+        "description": "Создание курьера. Роль принудительно устанавливается в COURIER,\nчтобы избежать случайного создания других типов пользователей.",
+        "operationId": "create_courier_api_v1_backoffice_couriers__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:write"]
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UserAdminCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -145,12 +150,371 @@
               }
             }
           }
-        },
+        }
+      },
+      "get": {
+        "tags": ["Backoffice | Couriers"],
+        "summary": "Список всех курьеров",
+        "description": "Выводит список курьеров с привязанными к ним активными счетами (Account)\nи складами/машинами (Inventory).",
+        "operationId": "get_couriers_api_v1_backoffice_couriers__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Номер страницы",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Номер страницы"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Размер страницы",
+              "default": 50,
+              "title": "Size"
+            },
+            "description": "Размер страницы"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Поиск по ФИО курьера",
+              "title": "Search"
+            },
+            "description": "Поиск по ФИО курьера"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CouriersResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/couriers/{courier_id}": {
+      "get": {
+        "tags": ["Backoffice | Couriers"],
+        "summary": "Профиль курьера",
+        "description": "Получить данные конкретного курьера.",
+        "operationId": "get_courier_api_v1_backoffice_couriers__courier_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courier_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Courier Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Backoffice | Couriers"],
+        "summary": "Обновить данные курьера",
+        "description": "Изменение ФИО, пароля или других данных курьера.",
+        "operationId": "update_courier_api_v1_backoffice_couriers__courier_id__patch",
         "security": [
           {
             "OAuth2PasswordBearer": ["users:write"]
           }
-        ]
+        ],
+        "parameters": [
+          {
+            "name": "courier_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Courier Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserAdminUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/couriers/{courier_id}/block": {
+      "post": {
+        "tags": ["Backoffice | Couriers"],
+        "summary": "Уволить/Заблокировать курьера",
+        "description": "Переводит курьера в статус is_active = False.",
+        "operationId": "block_courier_api_v1_backoffice_couriers__courier_id__block_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:write"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courier_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Courier Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/users/": {
+      "post": {
+        "tags": ["Backoffice | Users"],
+        "summary": "Создать нового сотрудника или пользователя",
+        "description": "Создание пользователя вручную через админ-панель.",
+        "operationId": "create_user_api_v1_backoffice_users__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:write"]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserAdminCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Backoffice | Users"],
+        "summary": "Список пользователей (Сотрудники, Клиенты)",
+        "operationId": "get_users_api_v1_backoffice_users__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Номер страницы",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Номер страницы"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Размер страницы",
+              "default": 50,
+              "title": "Size"
+            },
+            "description": "Размер страницы"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Role"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по роли",
+              "title": "Role"
+            },
+            "description": "Фильтр по роли"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Поиск по ФИО",
+              "title": "Search"
+            },
+            "description": "Поиск по ФИО"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/backoffice/users/{id}": {
@@ -545,7 +909,7 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 100,
+              "maximum": 500,
               "minimum": 1,
               "default": 50,
               "title": "Limit"
@@ -567,8 +931,31 @@
                   "type": "null"
                 }
               ],
+              "description": "Фильтр по статусам",
               "title": "Statuses"
-            }
+            },
+            "description": "Фильтр по статусам"
+          },
+          {
+            "name": "payment_methods",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentMethod"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по способам оплаты",
+              "title": "Payment Methods"
+            },
+            "description": "Фильтр по способам оплаты"
           },
           {
             "name": "courier_id",
@@ -605,6 +992,23 @@
             }
           },
           {
+            "name": "client_inventory_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Inventory Id"
+            }
+          },
+          {
             "name": "date_from",
             "in": "query",
             "required": false,
@@ -637,6 +1041,44 @@
               ],
               "title": "Date To"
             }
+          },
+          {
+            "name": "min_amount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Минимальная сумма заказа",
+              "title": "Min Amount"
+            },
+            "description": "Минимальная сумма заказа"
+          },
+          {
+            "name": "max_amount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Максимальная сумма заказа",
+              "title": "Max Amount"
+            },
+            "description": "Максимальная сумма заказа"
           }
         ],
         "responses": {
@@ -1234,7 +1676,6 @@
       "post": {
         "tags": ["Courier | Orders"],
         "summary": "Create Order",
-        "description": "Создание заказа администратором от лица клиента.",
         "operationId": "create_order_api_v1_courier_orders__post",
         "security": [
           {
@@ -1684,36 +2125,17 @@
       "post": {
         "tags": ["Client | Orders"],
         "summary": "Create Order",
-        "description": "Создание заказа администратором от лица клиента.",
+        "description": "Создание",
         "operationId": "create_order_api_v1_client_orders__post",
-        "security": [
-          {
-            "OAuth2PasswordBearer": ["orders:edit"]
-          }
-        ],
-        "parameters": [
-          {
-            "name": "client_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "description": "ID клиента",
-              "title": "Client Id"
-            },
-            "description": "ID клиента"
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/OrderCreate"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -1736,7 +2158,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ]
       }
     },
     "/api/v1/client/orders/{order_id}": {
@@ -1947,6 +2374,26 @@
   },
   "components": {
     "schemas": {
+      "AccountShort": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "balance": {
+            "type": "integer",
+            "title": "Balance"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["id", "balance", "name"],
+        "title": "AccountShort"
+      },
       "Body_add_product_to_order_api_v1_backoffice_orders__order_id__items_post": {
         "properties": {
           "product_id": {
@@ -2086,6 +2533,68 @@
         "required": ["new_status"],
         "title": "Body_update_order_status_api_v1_courier_orders__order_id__status_patch"
       },
+      "CourierResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "account": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AccountShort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inventory": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InventoryShort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": ["id", "username", "phone", "is_active"],
+        "title": "CourierResponse"
+      },
+      "CouriersResponse": {
+        "properties": {
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "couriers": {
+            "items": {
+              "$ref": "#/components/schemas/CourierResponse"
+            },
+            "type": "array",
+            "title": "Couriers"
+          }
+        },
+        "type": "object",
+        "required": ["total_count", "couriers"],
+        "title": "CouriersResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2098,6 +2607,22 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "InventoryShort": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": ["id", "name"],
+        "title": "InventoryShort"
       },
       "Item": {
         "properties": {
@@ -2116,8 +2641,7 @@
         },
         "type": "object",
         "required": ["product_id", "quantity"],
-        "title": "Item",
-        "description": "Элемент корзины, который присылает клиент."
+        "title": "Item"
       },
       "OrderCreate": {
         "properties": {
@@ -2133,11 +2657,17 @@
             "$ref": "#/components/schemas/PaymentMethod",
             "title": "Способ оплаты",
             "description": "Намерение клиента по оплате: Наличные, Карта ",
-            "examples": ["card"]
+            "examples": ["cash"]
+          },
+          "inventory_id": {
+            "type": "string",
+            "minLength": 1,
+            "format": "uuid",
+            "title": "ID адресса клиента"
           }
         },
         "type": "object",
-        "required": ["items", "payment_method"],
+        "required": ["items", "payment_method", "inventory_id"],
         "title": "OrderCreate"
       },
       "OrderItemResponse": {
@@ -2487,11 +3017,11 @@
           "role": {
             "$ref": "#/components/schemas/Role"
           },
-          "full_name": {
+          "username": {
             "type": "string",
             "maxLength": 255,
             "minLength": 2,
-            "title": "Full Name",
+            "title": "Username",
             "example": "Анвар Анваров"
           },
           "phone": {
@@ -2511,7 +3041,7 @@
           }
         },
         "type": "object",
-        "required": ["role", "full_name", "phone", "password"],
+        "required": ["role", "username", "phone", "password"],
         "title": "UserAdminCreate"
       },
       "UserAdminUpdate": {
@@ -2519,11 +3049,11 @@
           "role": {
             "$ref": "#/components/schemas/Role"
           },
-          "full_name": {
+          "username": {
             "type": "string",
             "maxLength": 255,
             "minLength": 2,
-            "title": "Full Name",
+            "title": "Username",
             "example": "Анвар Анваров"
           },
           "is_active": {
@@ -2539,12 +3069,12 @@
           }
         },
         "type": "object",
-        "required": ["role", "full_name"],
+        "required": ["role", "username"],
         "title": "UserAdminUpdate"
       },
       "UserCreate": {
         "properties": {
-          "full_name": {
+          "username": {
             "anyOf": [
               {
                 "type": "string",
@@ -2556,7 +3086,7 @@
                 "type": "null"
               }
             ],
-            "title": "Full Name"
+            "title": "Username"
           },
           "phone": {
             "type": "string",
@@ -2575,11 +3105,11 @@
           "role": {
             "$ref": "#/components/schemas/Role"
           },
-          "full_name": {
+          "username": {
             "type": "string",
             "maxLength": 255,
             "minLength": 2,
-            "title": "Full Name",
+            "title": "Username",
             "example": "Анвар Анваров"
           },
           "id": {
@@ -2605,7 +3135,7 @@
         "type": "object",
         "required": [
           "role",
-          "full_name",
+          "username",
           "id",
           "is_active",
           "created_at",
@@ -2613,6 +3143,24 @@
         ],
         "title": "UserResponse",
         "description": "Эту схему мы возвращаем из роутера.\nОна включает ID и даты, но НИКОГДА не включает пароль (даже хешированный)."
+      },
+      "UserResponseList": {
+        "properties": {
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/UserResponse"
+            },
+            "type": "array",
+            "title": "Users"
+          }
+        },
+        "type": "object",
+        "required": ["total_count", "users"],
+        "title": "UserResponseList"
       },
       "ValidationError": {
         "properties": {

@@ -27,7 +27,8 @@ export const authApi = baseApi.injectEndpoints({
     }),
     register: build.mutation({
       query: (body) => ({
-        url: "/api/v1/auth/register/",
+        // Avoid 307 redirects (slash vs no-slash) which can trigger CORS blocks.
+        url: "/api/v1/auth/register",
         method: "POST",
         body,
       }),
@@ -38,4 +39,3 @@ export const authApi = baseApi.injectEndpoints({
 });
 
 export const { useLoginMutation, useRegisterMutation } = authApi;
-

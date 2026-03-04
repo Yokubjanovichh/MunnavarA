@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import styles from "./Sidebar.module.css";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, selectRole } from "@/features/auth/authSlice";
 import Logo from "@/assets/icons/Logo.svg";
+import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
 
 function Icon({ name }) {
   switch (name) {
@@ -330,23 +333,23 @@ const SECTIONS = [
       },
     ],
   },
-  {
-    title: "Reklama",
-    items: [
-      {
-        to: "/promocodes",
-        label: "Promokodlar",
-        icon: "ticket",
-        roles: ["admin", "manager"],
-      },
-      {
-        to: "/reviews",
-        label: "Sharhlar",
-        icon: "star",
-        roles: ["admin", "manager"],
-      },
-    ],
-  },
+  // {
+  //   title: "Reklama",
+  //   items: [
+  //     {
+  //       to: "/promocodes",
+  //       label: "Promokodlar",
+  //       icon: "ticket",
+  //       roles: ["admin", "manager"],
+  //     },
+  //     {
+  //       to: "/reviews",
+  //       label: "Sharhlar",
+  //       icon: "star",
+  //       roles: ["admin", "manager"],
+  //     },
+  //   ],
+  // },
   {
     title: "Mijozlar",
     items: [
@@ -387,6 +390,7 @@ const SECTIONS = [
         to: "/settings",
         label: "Umumiy sozlamalar",
         icon: "settings",
+        disabled: true,
         roles: ["admin"],
       },
     ],
@@ -397,6 +401,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const role = useSelector(selectRole);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   return (
     <aside className={styles.sidebar}>
@@ -419,18 +424,36 @@ export default function Sidebar() {
             <div key={section.title} className={styles.section}>
               <div className={styles.sectionTitle}>{section.title}</div>
               <nav className={styles.nav}>
-                {visible.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) =>
-                      isActive ? `${styles.link} ${styles.active}` : styles.link
-                    }
-                  >
-                    <Icon name={item.icon} />
-                    <span className={styles.linkLabel}>{item.label}</span>
-                  </NavLink>
-                ))}
+                {visible.map((item) => {
+                  if (item.disabled) {
+                    return (
+                      <div
+                        key={item.to}
+                        className={`${styles.link} ${styles.disabledLink}`}
+                        aria-disabled="true"
+                        title="Hozircha mavjud emas"
+                      >
+                        <Icon name={item.icon} />
+                        <span className={styles.linkLabel}>{item.label}</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={({ isActive }) =>
+                        isActive
+                          ? `${styles.link} ${styles.active}`
+                          : styles.link
+                      }
+                    >
+                      <Icon name={item.icon} />
+                      <span className={styles.linkLabel}>{item.label}</span>
+                    </NavLink>
+                  );
+                })}
               </nav>
               <div className={styles.divider} />
             </div>
@@ -443,14 +466,43 @@ export default function Sidebar() {
           type="button"
           className={styles.link}
           onClick={() => {
-            dispatch(logout());
-            navigate("/login", { replace: true });
+            setLogoutConfirmOpen(true);
           }}
         >
           <Icon name="logout" />
           <span className={styles.linkLabel}>Chiqish</span>
         </button>
       </div>
+
+      <Modal
+        open={logoutConfirmOpen}
+        title="Chiqishni tasdiqlash"
+        onClose={() => setLogoutConfirmOpen(false)}
+      >
+        <div className={styles.confirmText}>
+          Akkauntdan chiqishni xohlaysizmi?
+        </div>
+        <div className={styles.confirmFooter}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="small"
+            onClick={() => setLogoutConfirmOpen(false)}
+          >
+            Bekor qilish
+          </Button>
+          <Button
+            type="button"
+            size="small"
+            onClick={() => {
+              dispatch(logout());
+              navigate("/login", { replace: true });
+            }}
+          >
+            Chiqish
+          </Button>
+        </div>
+      </Modal>
     </aside>
   );
 }

@@ -540,10 +540,6 @@
   cursor: pointer;
 }
 
-.pageBtn:hover {
-  background: #f9fafb;
-}
-
 .pageBtnActive {
   background: #111827;
   border-color: #111827;

@@ -6,6 +6,13 @@ import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import PhoneInput from "@/components/ui/PhoneInput";
 import { formatUzPhone } from "@/components/ui/formatUzPhone";
+import {
+  useBlockCourierMutation,
+  useCreateCourierMutation,
+  useGetCouriersQuery,
+  useLazyGetCourierQuery,
+  useUpdateCourierMutation,
+} from "@/services/couriersApi";
 
 function BreadcrumbChevron() {
   return (
@@ -107,180 +114,195 @@ function TrashIcon() {
   );
 }
 
-function EyeIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M2.25 12C3.75 7.5 7.5 4.5 12 4.5C16.5 4.5 20.25 7.5 21.75 12C20.25 16.5 16.5 19.5 12 19.5C7.5 19.5 3.75 16.5 2.25 12Z"
-        stroke="#212B36"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 15.25C13.7949 15.25 15.25 13.7949 15.25 12C15.25 10.2051 13.7949 8.75 12 8.75C10.2051 8.75 8.75 10.2051 8.75 12C8.75 13.7949 10.2051 15.25 12 15.25Z"
-        stroke="#212B36"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function normalizePhoneE164(value) {
+  const s = String(value ?? "").trim();
+  if (!s) return "";
+  const digits = s.replace(/\D+/g, "");
+  if (!digits) return "";
+  return `+${digits}`;
 }
 
-function EyeOffIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M3 3L21 21"
-        stroke="#212B36"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10.6 10.6C10.2 11 10 11.5 10 12C10 13.1 10.9 14 12 14C12.5 14 13 13.8 13.4 13.4"
-        stroke="#212B36"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9.88 5.09C10.56 4.86 11.27 4.75 12 4.75C16.5 4.75 20.25 7.75 21.75 12.25C21.27 13.69 20.46 14.94 19.41 15.95"
-        stroke="#212B36"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M6.07 6.06C4.36 7.23 3.03 8.98 2.25 11.25C3.75 15.75 7.5 18.75 12 18.75C13.64 18.75 15.2 18.35 16.59 17.62"
-        stroke="#212B36"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function getApiErrorMessage(err) {
+  const data = err?.data;
+  if (typeof data === "string" && data.trim()) return data;
+  if (data?.detail) {
+    if (typeof data.detail === "string") return data.detail;
+    if (Array.isArray(data.detail)) {
+      const first = data.detail[0];
+      const msg = first?.msg || first?.message;
+      if (msg) return String(msg);
+    }
+  }
+  if (err?.error) return String(err.error);
+  if (err?.status) return `Request failed (${err.status})`;
+  return "Xatolik yuz berdi";
+}
+
+function formatMoneyUZS(amount) {
+  const num = Number(amount);
+  if (!Number.isFinite(num)) return "—";
+  return num.toLocaleString("ru-RU");
 }
 
 export default function Couriers() {
-  const initialRows = useMemo(
-    () =>
-      Array.from({ length: 10 }).map((_, i) => ({
-        key: `courier-${i}`,
-        name: "Andy Smith",
-        createdAt: "24 Dec 2024",
-        ordersDone: 100,
-        phone: "+998 90 123 45 67",
-        password: "123475",
-      })),
-    [],
-  );
-
-  const [rows, setRows] = useState(initialRows);
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
 
+  const skeletonCount = Math.min(perPage, 10);
+
+  const { data, isLoading, isFetching, isError, error } = useGetCouriersQuery({
+    page,
+    size: perPage,
+  });
+
+  const showSkeleton = isLoading || (isFetching && !data);
+
+  const couriers = Array.isArray(data?.couriers) ? data.couriers : [];
+  const totalCount =
+    typeof data?.total_count === "number" ? data.total_count : 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
+
+  const sortedCouriers = useMemo(() => {
+    // Keep inactive couriers at the bottom (within current page).
+    return [...couriers].sort((a, b) => {
+      const aKey = a?.is_active ? 0 : 1;
+      const bKey = b?.is_active ? 0 : 1;
+      if (aKey !== bKey) return aKey - bKey;
+      return String(a?.username ?? "").localeCompare(String(b?.username ?? ""));
+    });
+  }, [couriers]);
+
   const [createOpen, setCreateOpen] = useState(false);
-  const [createName, setCreateName] = useState("Andy Smith");
+  const [createName, setCreateName] = useState("");
   const [createPhone, setCreatePhone] = useState("+998");
-  const [createPassword, setCreatePassword] = useState("123475");
+  const [createPassword, setCreatePassword] = useState("");
+  const [createError, setCreateError] = useState(null);
 
   const [editOpen, setEditOpen] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
+  const [editCourierId, setEditCourierId] = useState(null);
   const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
+  const [editPhone, setEditPhone] = useState("+998");
   const [editPassword, setEditPassword] = useState("");
-
-  const [passwordVisibleByKey, setPasswordVisibleByKey] = useState({});
+  const [editPasswordConfirm, setEditPasswordConfirm] = useState("");
+  const [editInitial, setEditInitial] = useState(null);
+  const [editError, setEditError] = useState(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteIndex, setDeleteIndex] = useState(null);
+  const [deleteCourierId, setDeleteCourierId] = useState(null);
   const [deleteName, setDeleteName] = useState("");
 
-  const totalPages = 15;
-  const pages = [1, 2, 3, 4, "ellipsis", totalPages];
+  const pages = useMemo(() => {
+    const result = [];
+    if (page > 1) result.push(page - 1);
+    result.push(page);
+    if (page < totalPages) result.push(page + 1);
+    return result;
+  }, [page, totalPages]);
 
-  const startIndex = (page - 1) * perPage;
-  const visibleRows = rows.slice(startIndex, startIndex + perPage);
+  const [createCourier, { isLoading: isCreating }] = useCreateCourierMutation();
+  const [fetchCourier, { isFetching: isFetchingCourier }] =
+    useLazyGetCourierQuery();
+  const [updateCourier, { isLoading: isUpdating }] = useUpdateCourierMutation();
+  const [blockCourier, { isLoading: isBlocking }] = useBlockCourierMutation();
 
   const closeCreate = () => {
     setCreateOpen(false);
-    setCreateName("Andy Smith");
+    setCreateName("");
     setCreatePhone("+998");
-    setCreatePassword("123475");
+    setCreatePassword("");
+    setCreateError(null);
   };
 
   const closeEdit = () => {
     setEditOpen(false);
-    setEditIndex(null);
+    setEditCourierId(null);
     setEditName("");
-    setEditPhone("");
+    setEditPhone("+998");
     setEditPassword("");
+    setEditPasswordConfirm("");
+    setEditInitial(null);
+    setEditError(null);
   };
 
-  const handleCreate = () => {
-    const name = createName.trim();
-    if (!name) return;
+  const handleCreate = async () => {
+    const username = createName.trim();
+    const phone = normalizePhoneE164(createPhone);
+    const password = String(createPassword ?? "").trim();
+    if (!username || !phone || !password) return;
 
-    setRows((prev) => [
-      {
-        key: `courier-${Date.now()}`,
-        name,
-        createdAt: "24 Dec 2024",
-        ordersDone: 0,
-        phone: createPhone,
-        password: createPassword,
-      },
-      ...prev,
-    ]);
-
-    closeCreate();
+    setCreateError(null);
+    try {
+      await createCourier({
+        role: "courier",
+        username,
+        phone,
+        password,
+      }).unwrap();
+      closeCreate();
+      setPage(1);
+    } catch (e) {
+      setCreateError(getApiErrorMessage(e));
+    }
   };
 
-  const handleEditSave = () => {
-    if (editIndex === null) return;
+  const handleEditSave = async () => {
+    if (!editCourierId) return;
+    const username = editName.trim();
+    if (!username) return;
 
-    const name = editName.trim();
-    if (!name) return;
+    const phone = normalizePhoneE164(editPhone);
+    const password = String(editPassword ?? "").trim();
+    const passwordConfirm = String(editPasswordConfirm ?? "").trim();
+    if (password && password !== passwordConfirm) return;
 
-    setRows((prev) =>
-      prev.map((r, idx) =>
-        idx === editIndex
-          ? {
-              ...r,
-              name,
-              phone: editPhone,
-              password: editPassword,
-            }
-          : r,
-      ),
+    setEditError(null);
+    try {
+      const body = {
+        role: "courier",
+        username,
+        ...(phone ? { phone } : {}),
+        ...(password ? { password } : {}),
+      };
+
+      await updateCourier({ courierId: editCourierId, body }).unwrap();
+      closeEdit();
+    } catch (e) {
+      setEditError(getApiErrorMessage(e));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteCourierId) return;
+    const shouldGoPrevPage = couriers.length === 1 && page > 1;
+    try {
+      await blockCourier(deleteCourierId).unwrap();
+      setDeleteOpen(false);
+      setDeleteCourierId(null);
+      setDeleteName("");
+      if (shouldGoPrevPage) setPage((p) => Math.max(1, p - 1));
+    } catch {
+      // Keep modal open; user can retry.
+    }
+  };
+
+  const editDirty = useMemo(() => {
+    if (!editInitial) return false;
+    const username = editName.trim();
+    const phone = normalizePhoneE164(editPhone);
+    const password = String(editPassword ?? "").trim();
+    return (
+      username !== String(editInitial.username ?? "") ||
+      phone !== String(editInitial.phone ?? "") ||
+      Boolean(password)
     );
+  }, [editInitial, editName, editPhone, editPassword]);
 
-    closeEdit();
-  };
-
-  const handleDelete = () => {
-    if (deleteIndex === null) return;
-    setRows((prev) => prev.filter((_, idx) => idx !== deleteIndex));
-    setDeleteOpen(false);
-    setDeleteIndex(null);
-    setDeleteName("");
-  };
+  const editPasswordMismatch = useMemo(() => {
+    const password = String(editPassword ?? "").trim();
+    const passwordConfirm = String(editPasswordConfirm ?? "").trim();
+    if (!password) return false;
+    return password !== passwordConfirm;
+  }, [editPassword, editPasswordConfirm]);
 
   return (
     <div className={styles.page}>
@@ -311,89 +333,170 @@ export default function Couriers() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th className={styles.thName}>Kuryer nomi</th>
-                <th className={styles.thDate}>Yaratilgan sanasi</th>
-                <th className={styles.thOrdersDone}>Buyurtmalar bajarildi</th>
+                <th className={styles.thName}>Kuryer FIO</th>
+                <th className={styles.thInventory}>Mashina</th>
+                <th className={styles.thBalance}>Balans</th>
                 <th className={styles.thPhone}>Telefon raqam</th>
-                <th className={styles.thPassword}>Parol</th>
+                <th className={styles.thActive}></th>
                 <th className={styles.thActions} aria-hidden="true" />
               </tr>
             </thead>
             <tbody>
-              {visibleRows.map((r, idx) => (
-                <tr key={r.key} className={styles.tr}>
-                  <td className={styles.tdName}>{r.name}</td>
-                  <td className={styles.tdMuted}>{r.createdAt}</td>
-                  <td className={styles.tdMuted}>{r.ordersDone}</td>
-                  <td className={styles.tdMuted}>{r.phone}</td>
-                  <td className={styles.tdPassword}>
-                    <div className={styles.passwordCell}>
-                      <span className={styles.passwordText}>
-                        {passwordVisibleByKey[r.key] ? r.password : "••••••"}
-                      </span>
-                      <button
-                        type="button"
-                        className={styles.eyeBtn}
-                        aria-label={
-                          passwordVisibleByKey[r.key] ? "Hide" : "Show"
-                        }
-                        data-tooltip={
-                          passwordVisibleByKey[r.key]
-                            ? "Yashirish"
-                            : "Ko'rsatish"
-                        }
-                        onClick={() =>
-                          setPasswordVisibleByKey((prev) => ({
-                            ...prev,
-                            [r.key]: !prev[r.key],
-                          }))
-                        }
+              {showSkeleton ? (
+                Array.from({ length: skeletonCount }).map((_, i) => (
+                  <tr key={`sk-${i}`} className={styles.tr}>
+                    <td className={styles.tdName}>
+                      <div
+                        className={`${styles.skeletonBar} ${styles.skeletonName}`}
+                        aria-hidden="true"
+                      />
+                    </td>
+                    <td className={`${styles.tdMuted} ${styles.tdInventory}`}>
+                      <div
+                        className={`${styles.skeletonBar} ${styles.skeletonInventory}`}
+                        aria-hidden="true"
+                      />
+                    </td>
+                    <td className={`${styles.tdMuted} ${styles.tdBalance}`}>
+                      <div
+                        className={`${styles.skeletonBar} ${styles.skeletonBalance}`}
+                        aria-hidden="true"
+                      />
+                    </td>
+                    <td className={`${styles.tdMuted} ${styles.tdPhone}`}>
+                      <div
+                        className={`${styles.skeletonBar} ${styles.skeletonPhone}`}
+                        aria-hidden="true"
+                      />
+                    </td>
+                    <td className={styles.tdActive}>
+                      <span className={styles.skeletonDot} aria-hidden="true" />
+                    </td>
+                    <td className={styles.tdActions}>
+                      <div
+                        className={styles.skeletonActions}
+                        aria-hidden="true"
                       >
-                        {passwordVisibleByKey[r.key] ? (
-                          <EyeOffIcon />
-                        ) : (
-                          <EyeIcon />
-                        )}
-                      </button>
-                    </div>
-                  </td>
-                  <td className={styles.tdActions}>
-                    <div className={styles.actions}>
-                      <button
-                        type="button"
-                        className={styles.iconBtn}
-                        aria-label="Edit"
-                        data-tooltip="Tahrirlash"
-                        onClick={() => {
-                          const realIndex = startIndex + idx;
-                          setEditIndex(realIndex);
-                          setEditName(r.name ?? "");
-                          setEditPhone(formatUzPhone(r.phone ?? ""));
-                          setEditPassword(r.password ?? "");
-                          setEditOpen(true);
-                        }}
-                      >
-                        <EditIcon />
-                      </button>
-
-                      <button
-                        type="button"
-                        className={styles.iconBtn}
-                        aria-label="Delete"
-                        data-tooltip="O'chirish"
-                        onClick={() => {
-                          const realIndex = startIndex + idx;
-                          setDeleteIndex(realIndex);
-                          setDeleteName(r.name ?? "");
-                          setDeleteOpen(true);
-                        }}
-                      >
-                        <TrashIcon />
-                      </button>
-                    </div>
+                        <div className={styles.skeletonIcon} />
+                        <div className={styles.skeletonIcon} />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : isError ? (
+                <tr className={styles.tr}>
+                  <td className={styles.tdMuted} colSpan={6}>
+                    Xatolik: {getApiErrorMessage(error)}
                   </td>
                 </tr>
-              ))}
+              ) : sortedCouriers.length === 0 ? (
+                <tr className={styles.tr}>
+                  <td className={styles.tdMuted} colSpan={6}>
+                    Hozircha kuryerlar yo‘q
+                  </td>
+                </tr>
+              ) : (
+                sortedCouriers.map((c) => (
+                  <tr key={c.id} className={styles.tr}>
+                    <td className={styles.tdName}>{c.username ?? "—"}</td>
+                    <td className={`${styles.tdMuted} ${styles.tdInventory}`}>
+                      {c.inventory?.name ?? "—"}
+                    </td>
+                    <td className={`${styles.tdMuted} ${styles.tdBalance}`}>
+                      {formatMoneyUZS(c.account?.balance)}
+                    </td>
+                    <td className={`${styles.tdMuted} ${styles.tdPhone}`}>
+                      {c.phone ? formatUzPhone(c.phone) : "—"}
+                    </td>
+                    <td className={styles.tdActive}>
+                      <span
+                        className={
+                          c.is_active
+                            ? `${styles.statusDot} ${styles.statusGreen}`
+                            : `${styles.statusDot} ${styles.statusRed}`
+                        }
+                        aria-label={c.is_active ? "active" : "inactive"}
+                        title={c.is_active ? "Faol" : "Faol emas"}
+                      />
+                    </td>
+                    <td className={styles.tdActions}>
+                      <div className={styles.actions}>
+                        <button
+                          type="button"
+                          className={styles.iconBtn}
+                          aria-label="Edit"
+                          data-tooltip="Tahrirlash"
+                          onClick={() => {
+                            const rowUsername = String(c.username ?? "");
+                            const rowPhone = String(c.phone ?? "");
+
+                            setEditCourierId(c.id);
+                            setEditName(rowUsername);
+                            setEditPhone(
+                              rowPhone ? formatUzPhone(rowPhone) : "+998",
+                            );
+                            setEditPassword("");
+                            setEditPasswordConfirm("");
+                            setEditInitial({
+                              username: rowUsername,
+                              phone: normalizePhoneE164(rowPhone),
+                            });
+                            setEditOpen(true);
+
+                            fetchCourier(c.id, true)
+                              .unwrap()
+                              .then((details) => {
+                                // OpenAPI says UserResponse, but backend may return more.
+                                const nextUsername =
+                                  details?.username ??
+                                  details?.full_name ??
+                                  null;
+                                const nextPhone = details?.phone ?? null;
+
+                                if (typeof nextUsername === "string") {
+                                  setEditName(nextUsername);
+                                }
+                                if (typeof nextPhone === "string") {
+                                  setEditPhone(formatUzPhone(nextPhone));
+                                }
+
+                                setEditInitial((prev) => ({
+                                  username:
+                                    typeof nextUsername === "string"
+                                      ? nextUsername
+                                      : prev?.username,
+                                  phone:
+                                    typeof nextPhone === "string"
+                                      ? normalizePhoneE164(nextPhone)
+                                      : prev?.phone,
+                                }));
+                              })
+                              .catch((e) => {
+                                setEditError(getApiErrorMessage(e));
+                              });
+                          }}
+                        >
+                          <EditIcon />
+                        </button>
+
+                        <button
+                          type="button"
+                          className={styles.iconBtn}
+                          aria-label="Delete"
+                          data-tooltip="Bloklash"
+                          onClick={() => {
+                            setDeleteCourierId(c.id);
+                            setDeleteName(c.username ?? "");
+                            setDeleteOpen(true);
+                          }}
+                        >
+                          <TrashIcon />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -415,7 +518,7 @@ export default function Couriers() {
               <option value={50}>50</option>
             </select>
             <span className={styles.footerText}>Yozuvlar</span>
-            <span className={styles.total}>Jami kuryerlar: {rows.length}</span>
+            <span className={styles.total}>Jami kuryerlar: {totalCount}</span>
           </div>
 
           <div className={styles.pagination}>
@@ -423,38 +526,33 @@ export default function Couriers() {
               type="button"
               className={styles.navBtn}
               aria-label="Previous"
-              disabled={page <= 1}
+              disabled={page <= 1 || isLoading || isFetching}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <ChevronLeft />
             </button>
 
-            {pages.map((p) =>
-              p === "ellipsis" ? (
-                <span key="ellipsis" className={styles.ellipsis}>
-                  …
-                </span>
-              ) : (
-                <button
-                  key={p}
-                  type="button"
-                  className={
-                    p === page
-                      ? `${styles.pageBtn} ${styles.pageBtnActive}`
-                      : styles.pageBtn
-                  }
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </button>
-              ),
-            )}
+            {pages.map((p) => (
+              <button
+                key={p}
+                type="button"
+                className={
+                  p === page
+                    ? `${styles.pageBtn} ${styles.pageBtnActive}`
+                    : styles.pageBtn
+                }
+                onClick={() => setPage(p)}
+                disabled={isLoading || isFetching}
+              >
+                {p}
+              </button>
+            ))}
 
             <button
               type="button"
               className={styles.navBtn}
               aria-label="Next"
-              disabled={page >= totalPages}
+              disabled={page >= totalPages || isLoading || isFetching}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
               <ChevronRight />
@@ -473,11 +571,12 @@ export default function Couriers() {
       >
         <div className={styles.formGrid}>
           <div className={`${styles.field} ${styles.span2}`}>
-            <div className={styles.label}>Kuryer nomi</div>
+            <div className={styles.label}>Kuryer FIO</div>
             <Input
               size="small"
               value={createName}
               onChange={(e) => setCreateName(e.target.value)}
+              placeholder="Kuryer FIO"
             />
           </div>
 
@@ -496,9 +595,14 @@ export default function Couriers() {
               size="small"
               value={createPassword}
               onChange={(e) => setCreatePassword(e.target.value)}
+              type="password"
             />
           </div>
         </div>
+
+        {createError ? (
+          <div className={styles.apiNote}>Xatolik: {createError}</div>
+        ) : null}
 
         <div className={styles.formFooter}>
           <Button
@@ -506,8 +610,14 @@ export default function Couriers() {
             size="small"
             className={styles.formSubmit}
             onClick={handleCreate}
+            disabled={
+              isCreating ||
+              !createName.trim() ||
+              !normalizePhoneE164(createPhone) ||
+              !String(createPassword ?? "").trim()
+            }
           >
-            Yaratish
+            {isCreating ? "Yaratilmoqda…" : "Yaratish"}
           </Button>
         </div>
       </Modal>
@@ -521,8 +631,8 @@ export default function Couriers() {
         bodyClassName={styles.formBody}
       >
         <div className={styles.formGrid}>
-          <div className={`${styles.field} ${styles.span2}`}>
-            <div className={styles.label}>Kuryer nomi</div>
+          <div className={styles.field}>
+            <div className={styles.label}>Kuryer FIO</div>
             <Input
               size="small"
               value={editName}
@@ -540,14 +650,39 @@ export default function Couriers() {
           </div>
 
           <div className={styles.field}>
-            <div className={styles.label}>Parol</div>
+            <div className={styles.label}>Yangi parol</div>
             <Input
               size="small"
               value={editPassword}
               onChange={(e) => setEditPassword(e.target.value)}
+              type="password"
+              placeholder="Parolni o'zgartirish uchun kiriting"
+            />
+          </div>
+
+          <div className={styles.field}>
+            <div className={styles.label}>Yangi parolni tasdiqlash</div>
+            <Input
+              size="small"
+              value={editPasswordConfirm}
+              onChange={(e) => setEditPasswordConfirm(e.target.value)}
+              type="password"
+              placeholder="Parolni qayta kiriting"
             />
           </div>
         </div>
+
+        {editError ? (
+          <div className={styles.apiNote}>Xatolik: {editError}</div>
+        ) : null}
+
+        {isFetchingCourier ? (
+          <div className={styles.apiNote}>Ma'lumotlar yuklanmoqda…</div>
+        ) : null}
+
+        {editPasswordMismatch ? (
+          <div className={styles.apiNote}>Xatolik: parollar mos emas</div>
+        ) : null}
 
         <div className={styles.formFooter}>
           <Button
@@ -555,19 +690,27 @@ export default function Couriers() {
             size="small"
             className={styles.formSubmit}
             onClick={handleEditSave}
+            disabled={
+              isUpdating ||
+              isFetchingCourier ||
+              !editCourierId ||
+              !editName.trim() ||
+              !editDirty ||
+              editPasswordMismatch
+            }
           >
-            Saqlash
+            {isUpdating ? "Saqlanmoqda…" : "Saqlash"}
           </Button>
         </div>
       </Modal>
 
       <Modal
         open={deleteOpen}
-        title="Kuryerni o'chirish"
+        title="Kuryerni bloklash"
         onClose={() => setDeleteOpen(false)}
       >
         <div className={styles.confirmText}>
-          Ushbu kuryerni o'chirishni xohlaysizmi?
+          Ushbu kuryerni bloklashni xohlaysizmi?
         </div>
         <div className={styles.confirmMeta}>
           <span className={styles.metaLabel}>Kuryer:</span>{" "}
@@ -588,8 +731,9 @@ export default function Couriers() {
             size="small"
             className={styles.confirmBtn}
             onClick={handleDelete}
+            disabled={isBlocking || !deleteCourierId}
           >
-            O'chirish
+            {isBlocking ? "Bloklanmoqda…" : "Bloklash"}
           </Button>
         </div>
       </Modal>
