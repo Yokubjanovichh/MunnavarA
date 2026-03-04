@@ -1,11 +1,12 @@
 import styles from "./Header.module.css";
-import { useAuthStore } from "@/store/authStore";
+import { useSelector } from "react-redux";
+import { selectRole } from "@/features/auth/authSlice";
 
 import userPhoto from "../..//assets/images/userName.png";
 import qrCode from "../../assets/images/qrCode.png";
 
 export default function Header() {
-  const role = useAuthStore((s) => s.role);
+  const role = useSelector(selectRole);
 
   return (
     <header className={styles.header}>

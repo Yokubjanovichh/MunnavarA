@@ -13,16 +13,19 @@ import Couriers from "@/pages/Couriers";
 import Settings from "@/pages/Settings";
 import Transport from "@/pages/Transport";
 import Login from "@/pages/Login";
-import { useAuthStore } from "@/store/authStore";
+import { useSelector } from "react-redux";
+import { selectIsAuthed } from "@/features/auth/authSlice";
+import { useGetMeQuery } from "@/services/profileApi";
 
 export default function App() {
-  const token = useAuthStore((s) => s.token);
+  const isAuthed = useSelector(selectIsAuthed);
+  useGetMeQuery(undefined, { skip: !isAuthed });
 
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      <Route element={token ? <Layout /> : <Navigate to="/login" replace />}>
+      <Route element={isAuthed ? <Layout /> : <Navigate to="/login" replace />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/orders" element={<Orders />} />
@@ -40,7 +43,7 @@ export default function App() {
 
       <Route
         path="*"
-        element={<Navigate to={token ? "/dashboard" : "/login"} replace />}
+        element={<Navigate to={isAuthed ? "/dashboard" : "/login"} replace />}
       />
     </Routes>
   );

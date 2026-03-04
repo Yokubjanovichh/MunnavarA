@@ -1,0 +1,2690 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Enterprise API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Регистрация нового клиента",
+        "operationId": "register_user_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Вход в систему (Получение Access Token)",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_api_v1_auth_login_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/profile/me": {
+      "get": {
+        "tags": ["Backoffice | Profile"],
+        "summary": "Получить профиль текущего пользователя",
+        "description": "Возвращает данные профиля авторизованного пользователя.\nFastAPI автоматически:\n1. Достанет JWT из заголовка Authorization\n2. Проверит наличие 'profile:read' в токене\n3. Сходит в БД (через get_current_user) и достанет объект User",
+        "operationId": "get_me_api_v1_backoffice_profile_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["profile:read"]
+          }
+        ]
+      }
+    },
+    "/api/v1/backoffice/users/": {
+      "post": {
+        "tags": ["Backoffice | Users"],
+        "summary": "Создать нового сотрудника или пользователя",
+        "description": "Создание пользователя вручную через админ-панель.",
+        "operationId": "create_user_api_v1_backoffice_users__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserAdminCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:write"]
+          }
+        ]
+      }
+    },
+    "/api/v1/backoffice/users/{id}": {
+      "get": {
+        "tags": ["Backoffice | Users"],
+        "summary": "Получить профиль пользователя по ID",
+        "description": "Детальная информация о конкретном пользователе.\nЕсли пользователь не найден, сервис должен выбросить NotFoundError.",
+        "operationId": "get_user_api_v1_backoffice_users__id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/users/{user_id}": {
+      "patch": {
+        "tags": ["Backoffice | Users"],
+        "summary": "Обновить данные пользователя",
+        "operationId": "update_user_api_v1_backoffice_users__user_id__patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:write"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserAdminUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/users/{user_id}/block": {
+      "post": {
+        "tags": ["Backoffice | Users"],
+        "summary": "Заблокировать пользователя",
+        "description": "Мягкое удаление / блокировка пользователя (is_active = False).",
+        "operationId": "block_user_api_v1_backoffice_users__user_id__block_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["users:write"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/catalog/": {
+      "get": {
+        "tags": ["Backoffice | Catalog"],
+        "summary": "Получить список товаров",
+        "operationId": "get_catalog_api_v1_backoffice_catalog__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["catalog:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "product_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по типу",
+              "title": "Product Type"
+            },
+            "description": "Фильтр по типу"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductResponse"
+                  },
+                  "title": "Response Get Catalog Api V1 Backoffice Catalog  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/catalog": {
+      "post": {
+        "tags": ["Backoffice | Catalog"],
+        "summary": "Добавить новый товар",
+        "description": "Добавление новой позиции (Вода, Тара, Оборудование).",
+        "operationId": "create_product_api_v1_backoffice_catalog_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["catalog:write"]
+          }
+        ]
+      }
+    },
+    "/api/v1/backoffice/catalog/{product_id}": {
+      "patch": {
+        "tags": ["Backoffice | Catalog"],
+        "summary": "Редактировать товар",
+        "operationId": "update_product_api_v1_backoffice_catalog__product_id__patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["catalog:write"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Backoffice | Catalog"],
+        "summary": "Удалить товар (Архивация)",
+        "description": "Мягкое удаление товара из каталога (перевод is_active=False).",
+        "operationId": "archive_product_api_v1_backoffice_catalog__product_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["catalog:write"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/orders/": {
+      "get": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Search Orders",
+        "description": "Глобальный поиск заказов по фильтрам.",
+        "operationId": "search_orders_api_v1_backoffice_orders__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "statuses",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Statuses"
+            }
+          },
+          {
+            "name": "courier_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Courier Id"
+            }
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderResponse"
+                  },
+                  "title": "Response Search Orders Api V1 Backoffice Orders  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Create Order",
+        "description": "Создание заказа администратором от лица клиента.",
+        "operationId": "create_order_api_v1_backoffice_orders__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "ID клиента",
+              "title": "Client Id"
+            },
+            "description": "ID клиента"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/orders/{order_id}": {
+      "get": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Get Order Details",
+        "description": "Детальная информация по конкретному заказу.",
+        "operationId": "get_order_details_api_v1_backoffice_orders__order_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/orders/{order_id}/items": {
+      "post": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Add Product To Order",
+        "description": "Добавить товар в заказ (или увеличить количество).",
+        "operationId": "add_product_to_order_api_v1_backoffice_orders__order_id__items_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_product_to_order_api_v1_backoffice_orders__order_id__items_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/orders/{order_id}/items/{product_id}": {
+      "delete": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Remove Product From Order",
+        "description": "Полностью удалить позицию товара из заказа.",
+        "operationId": "remove_product_from_order_api_v1_backoffice_orders__order_id__items__product_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/orders/{order_id}/assign": {
+      "patch": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Assign Courier",
+        "description": "Назначить или сменить курьера на заказе.",
+        "operationId": "assign_courier_api_v1_backoffice_orders__order_id__assign_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_assign_courier_api_v1_backoffice_orders__order_id__assign_patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/orders/{order_id}/status": {
+      "patch": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Update Order Status",
+        "description": "Принудительно изменить статус заказа (ручная корректировка).",
+        "operationId": "update_order_status_api_v1_backoffice_orders__order_id__status_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_order_status_api_v1_backoffice_orders__order_id__status_patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/orders/client/{client_id}/history": {
+      "get": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Get Client History",
+        "description": "Просмотр истории заказов конкретного клиента.",
+        "operationId": "get_client_history_api_v1_backoffice_orders_client__client_id__history_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderResponse"
+                  },
+                  "title": "Response Get Client History Api V1 Backoffice Orders Client  Client Id  History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backoffice/orders/courier/{courier_id}/tasks": {
+      "get": {
+        "tags": ["Backoffice | Orders"],
+        "summary": "Get Courier Tasks",
+        "description": "Просмотр активных задач (заказов) конкретного курьера.",
+        "operationId": "get_courier_tasks_api_v1_backoffice_orders_courier__courier_id__tasks_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courier_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Courier Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderResponse"
+                  },
+                  "title": "Response Get Courier Tasks Api V1 Backoffice Orders Courier  Courier Id  Tasks Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courier/profile/me": {
+      "get": {
+        "tags": ["Courier | Profile"],
+        "summary": "Получить профиль текущего пользователя",
+        "description": "Возвращает данные профиля авторизованного пользователя.\nFastAPI автоматически:\n1. Достанет JWT из заголовка Authorization\n2. Проверит наличие 'profile:read' в токене\n3. Сходит в БД (через get_current_user) и достанет объект User",
+        "operationId": "get_me_api_v1_courier_profile_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["profile:read"]
+          }
+        ]
+      }
+    },
+    "/api/v1/courier/catalog/": {
+      "get": {
+        "tags": ["Courier | Catalog"],
+        "summary": "Получить список товаров",
+        "operationId": "get_catalog_api_v1_courier_catalog__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["catalog:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по типу",
+              "title": "Product Type"
+            },
+            "description": "Фильтр по типу"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductResponse"
+                  },
+                  "title": "Response Get Catalog Api V1 Courier Catalog  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courier/orders/": {
+      "post": {
+        "tags": ["Courier | Orders"],
+        "summary": "Create Order",
+        "description": "Создание заказа администратором от лица клиента.",
+        "operationId": "create_order_api_v1_courier_orders__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "ID клиента",
+              "title": "Client Id"
+            },
+            "description": "ID клиента"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courier/orders/{order_id}": {
+      "get": {
+        "tags": ["Courier | Orders"],
+        "summary": "Get Order Details",
+        "description": "Детальная информация по конкретному заказу.",
+        "operationId": "get_order_details_api_v1_courier_orders__order_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courier/orders/{order_id}/items": {
+      "post": {
+        "tags": ["Courier | Orders"],
+        "summary": "Add Product To Order",
+        "operationId": "add_product_to_order_api_v1_courier_orders__order_id__items_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_product_to_order_api_v1_courier_orders__order_id__items_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courier/orders/{order_id}/items/{product_id}": {
+      "delete": {
+        "tags": ["Courier | Orders"],
+        "summary": "Remove Product From Order",
+        "description": "Полностью удалить позицию товара из заказа.",
+        "operationId": "remove_product_from_order_api_v1_courier_orders__order_id__items__product_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courier/orders/{order_id}/status": {
+      "patch": {
+        "tags": ["Courier | Orders"],
+        "summary": "Update Order Status",
+        "operationId": "update_order_status_api_v1_courier_orders__order_id__status_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_order_status_api_v1_courier_orders__order_id__status_patch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courier/orders/tasks": {
+      "get": {
+        "tags": ["Courier | Orders"],
+        "summary": "Get Tasks",
+        "description": "Просмотр активных задач (заказов) конкретного курьера.",
+        "operationId": "get_tasks_api_v1_courier_orders_tasks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrderResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get Tasks Api V1 Courier Orders Tasks Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:read"]
+          }
+        ]
+      }
+    },
+    "/api/v1/client/login": {
+      "post": {
+        "tags": ["Client | Auth"],
+        "summary": "Вход в систему (Получение Access Token)",
+        "operationId": "login_api_v1_client_login_post",
+        "parameters": [
+          {
+            "name": "phone",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Phone"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/client/profile/me": {
+      "get": {
+        "tags": ["Client | Profile"],
+        "summary": "Получить профиль текущего пользователя",
+        "description": "Возвращает данные профиля авторизованного пользователя.\nFastAPI автоматически:\n1. Достанет JWT из заголовка Authorization\n2. Проверит наличие 'profile:read' в токене\n3. Сходит в БД (через get_current_user) и достанет объект User",
+        "operationId": "get_me_api_v1_client_profile_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["profile:read"]
+          }
+        ]
+      }
+    },
+    "/api/v1/client/catalog/": {
+      "get": {
+        "tags": ["Client | Catalog"],
+        "summary": "Получить список товаров",
+        "operationId": "get_catalog_api_v1_client_catalog__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["catalog:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Фильтр по типу",
+              "title": "Product Type"
+            },
+            "description": "Фильтр по типу"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductResponse"
+                  },
+                  "title": "Response Get Catalog Api V1 Client Catalog  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/client/orders/": {
+      "post": {
+        "tags": ["Client | Orders"],
+        "summary": "Create Order",
+        "description": "Создание заказа администратором от лица клиента.",
+        "operationId": "create_order_api_v1_client_orders__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "ID клиента",
+              "title": "Client Id"
+            },
+            "description": "ID клиента"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/client/orders/{order_id}": {
+      "get": {
+        "tags": ["Client | Orders"],
+        "summary": "Get Order Details",
+        "description": "Детальная информация по конкретному заказу.",
+        "operationId": "get_order_details_api_v1_client_orders__order_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:read"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/client/orders/{order_id}/items": {
+      "post": {
+        "tags": ["Client | Orders"],
+        "summary": "Add Product To Order",
+        "operationId": "add_product_to_order_api_v1_client_orders__order_id__items_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_product_to_order_api_v1_client_orders__order_id__items_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/client/orders/{order_id}/items/{product_id}": {
+      "delete": {
+        "tags": ["Client | Orders"],
+        "summary": "Remove Product From Order",
+        "description": "Полностью удалить позицию товара из заказа.",
+        "operationId": "remove_product_from_order_api_v1_client_orders__order_id__items__product_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:edit"]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          },
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Product Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/client/orders/history": {
+      "get": {
+        "tags": ["Client | Orders"],
+        "summary": "Get Tasks",
+        "operationId": "get_tasks_api_v1_client_orders_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrderResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get Tasks Api V1 Client Orders History Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": ["orders:read"]
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_add_product_to_order_api_v1_backoffice_orders__order_id__items_post": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": ["product_id", "quantity"],
+        "title": "Body_add_product_to_order_api_v1_backoffice_orders__order_id__items_post"
+      },
+      "Body_add_product_to_order_api_v1_client_orders__order_id__items_post": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": ["product_id", "quantity"],
+        "title": "Body_add_product_to_order_api_v1_client_orders__order_id__items_post"
+      },
+      "Body_add_product_to_order_api_v1_courier_orders__order_id__items_post": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": ["product_id", "quantity"],
+        "title": "Body_add_product_to_order_api_v1_courier_orders__order_id__items_post"
+      },
+      "Body_assign_courier_api_v1_backoffice_orders__order_id__assign_patch": {
+        "properties": {
+          "courier_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Courier Id"
+          }
+        },
+        "type": "object",
+        "required": ["courier_id"],
+        "title": "Body_assign_courier_api_v1_backoffice_orders__order_id__assign_patch"
+      },
+      "Body_login_api_v1_auth_login_post": {
+        "properties": {
+          "grant_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^password$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "title": "Password"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": ""
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "format": "password",
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": ["username", "password"],
+        "title": "Body_login_api_v1_auth_login_post"
+      },
+      "Body_update_order_status_api_v1_backoffice_orders__order_id__status_patch": {
+        "properties": {
+          "new_status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          }
+        },
+        "type": "object",
+        "required": ["new_status"],
+        "title": "Body_update_order_status_api_v1_backoffice_orders__order_id__status_patch"
+      },
+      "Body_update_order_status_api_v1_courier_orders__order_id__status_patch": {
+        "properties": {
+          "new_status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          }
+        },
+        "type": "object",
+        "required": ["new_status"],
+        "title": "Body_update_order_status_api_v1_courier_orders__order_id__status_patch"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Item": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id",
+            "description": "ID воды, тары или оборудования из каталога"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Количество",
+            "examples": [2]
+          }
+        },
+        "type": "object",
+        "required": ["product_id", "quantity"],
+        "title": "Item",
+        "description": "Элемент корзины, который присылает клиент."
+      },
+      "OrderCreate": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Корзина товаров"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "title": "Способ оплаты",
+            "description": "Намерение клиента по оплате: Наличные, Карта ",
+            "examples": ["card"]
+          }
+        },
+        "type": "object",
+        "required": ["items", "payment_method"],
+        "title": "OrderCreate"
+      },
+      "OrderItemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity",
+            "description": "Количество"
+          },
+          "unit_price": {
+            "type": "integer",
+            "title": "Unit Price",
+            "description": "Историческая цена на момент покупки"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "quantity * unit_price"
+          }
+        },
+        "type": "object",
+        "required": ["id", "product_id", "quantity", "unit_price", "total"],
+        "title": "OrderItemResponse",
+        "description": "Как выглядит одна позиция в заказе при выдаче клиенту."
+      },
+      "OrderResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "courier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courier Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus"
+          },
+          "total_amount": {
+            "type": "integer",
+            "title": "Total Amount"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "client_id",
+          "courier_id",
+          "status",
+          "total_amount",
+          "items",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OrderResponse",
+        "description": "Полная модель заказа для Личного Кабинета или Дашборда."
+      },
+      "OrderStatus": {
+        "type": "string",
+        "enum": [
+          "new",
+          "assigned",
+          "in_transit",
+          "arrived",
+          "delivered",
+          "cancelled"
+        ],
+        "title": "OrderStatus"
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": ["cash", "card", "contract"],
+        "title": "PaymentMethod"
+      },
+      "ProductCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Название товара",
+            "examples": ["Вода Завод А 19Л ПК"]
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Цена",
+            "description": "Цена в минимальных единицах (копейки/тиыйны)",
+            "default": 0,
+            "examples": [20000]
+          },
+          "attributes": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Характеристики",
+            "description": "JSON с физическими свойствами (volume, material)",
+            "examples": [
+              {
+                "material": "PC",
+                "volume": 18.9
+              }
+            ]
+          },
+          "returnable_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "ID возвратной тары",
+            "description": "Указывается для воды, требующей обмена пустой бутылки"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType",
+            "title": "Тип товара",
+            "examples": ["water"]
+          }
+        },
+        "type": "object",
+        "required": ["name", "type"],
+        "title": "ProductCreate"
+      },
+      "ProductResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Название товара",
+            "examples": ["Вода Завод А 19Л ПК"]
+          },
+          "price": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Цена",
+            "description": "Цена в минимальных единицах (копейки/тиыйны)",
+            "default": 0,
+            "examples": [20000]
+          },
+          "attributes": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Характеристики",
+            "description": "JSON с физическими свойствами (volume, material)",
+            "examples": [
+              {
+                "material": "PC",
+                "volume": 18.9
+              }
+            ]
+          },
+          "returnable_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "ID возвратной тары",
+            "description": "Указывается для воды, требующей обмена пустой бутылки"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ProductType"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "type",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProductResponse"
+      },
+      "ProductType": {
+        "type": "string",
+        "enum": ["water", "container", "equipment"],
+        "title": "ProductType"
+      },
+      "ProductUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "attributes": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attributes"
+          },
+          "returnable_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Returnable Item Id"
+          }
+        },
+        "type": "object",
+        "title": "ProductUpdate"
+      },
+      "Role": {
+        "type": "string",
+        "enum": [
+          "system",
+          "admin",
+          "accountant",
+          "storekeeper",
+          "cashier",
+          "courier",
+          "client_b2c",
+          "client_b2b"
+        ],
+        "title": "Role"
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": ["access_token"],
+        "title": "TokenResponse",
+        "description": "Стандартная схема ответа при успешной авторизации.\nПоля access_token и token_type обязательны по спецификации OAuth2."
+      },
+      "UserAdminCreate": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Full Name",
+            "example": "Анвар Анваров"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{7,14}$",
+            "title": "Phone",
+            "description": "Номер телефона в международном формате",
+            "example": "+998901234567"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 4,
+            "title": "Password",
+            "description": "Пароль",
+            "example": "StrongPass123!"
+          }
+        },
+        "type": "object",
+        "required": ["role", "full_name", "phone", "password"],
+        "title": "UserAdminCreate"
+      },
+      "UserAdminUpdate": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Full Name",
+            "example": "Анвар Анваров"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": ["role", "full_name"],
+        "title": "UserAdminUpdate"
+      },
+      "UserCreate": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 2,
+                "example": "Анвар Анваров"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{7,14}$",
+            "title": "Phone",
+            "description": "Номер телефона в международном формате",
+            "example": "+998901234567"
+          }
+        },
+        "type": "object",
+        "required": ["phone"],
+        "title": "UserCreate"
+      },
+      "UserResponse": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Full Name",
+            "example": "Анвар Анваров"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "full_name",
+          "id",
+          "is_active",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UserResponse",
+        "description": "Эту схему мы возвращаем из роутера.\nОна включает ID и даты, но НИКОГДА не включает пароль (даже хешированный)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {
+              "users:read": "Разрешение: users:read",
+              "users:write": "Разрешение: users:write",
+              "profile:read": "Разрешение: profile:read",
+              "profile:write": "Разрешение: profile:write",
+              "catalog:read": "Разрешение: catalog:read",
+              "catalog:write": "Разрешение: catalog:write",
+              "orders:read": "Разрешение: orders:read",
+              "orders:create": "Разрешение: orders:create",
+              "orders:edit": "Разрешение: orders:edit",
+              "orders:deliver": "Разрешение: orders:deliver",
+              "orders:cancel": "Разрешение: orders:cancel",
+              "inventory:read": "Разрешение: inventory:read",
+              "inventory:write": "Разрешение: inventory:write",
+              "logistics:supply": "Разрешение: logistics:supply",
+              "logistics:transfer": "Разрешение: logistics:transfer",
+              "routes:read": "Разрешение: routes:read",
+              "finances:read": "Разрешение: finances:read",
+              "finances:write": "Разрешение: finances:write",
+              "payments:create": "Разрешение: payments:create",
+              "bills:read": "Разрешение: bills:read",
+              "settings:read": "Разрешение: settings:read",
+              "settings:write": "Разрешение: settings:write",
+              "system:exec": "Разрешение: system:exec"
+            },
+            "tokenUrl": "/api/v1/auth/login"
+          }
+        }
+      }
+    }
+  }
+}

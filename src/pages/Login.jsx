@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import styles from "./Login.module.css";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import { useAuthStore } from "@/store/authStore";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "@/features/auth/authSlice";
+import { useLoginMutation } from "@/services/authApi";
 
 import Logo from "../assets/icons/Logo.svg";
 import loginImg1 from "../assets/images/loginImg1.png";
@@ -12,7 +14,8 @@ import loginImg3 from "../assets/images/loginImg3.png";
 
 export default function Login() {
   const navigate = useNavigate();
-  const setToken = useAuthStore((s) => s.setToken);
+  const dispatch = useDispatch();
+  const [loginApi, { isLoading, error }] = useLoginMutation();
 
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -57,13 +60,22 @@ export default function Login() {
 
           <form
             className={styles.form}
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               if (!canSubmit) return;
 
-              // No API here — simple demo auth.
-              setToken("demo-token");
-              navigate("/dashboard", { replace: true });
+              try {
+                const res = await loginApi({
+                  username: login.trim(),
+                  password: password.trim(),
+                }).unwrap();
+
+                const accessToken = res?.access_token ?? res?.accessToken ?? null;
+                dispatch(setCredentials({ accessToken }));
+                navigate("/dashboard", { replace: true });
+              } catch {
+                // handled via RTKQ error
+              }
             }}
           >
             <label className={styles.field}>
@@ -86,10 +98,19 @@ export default function Login() {
             </label>
 
             <div className={styles.actions}>
-              <Button disabled={!canSubmit} className={styles.submit}>
+              <Button
+                disabled={!canSubmit || isLoading}
+                className={styles.submit}
+              >
                 Davom etish
               </Button>
             </div>
+
+            {error ? (
+              <div className={styles.sub} style={{ color: "#b42318" }}>
+                Login xatosi. Ma’lumotlarni tekshiring.
+              </div>
+            ) : null}
           </form>
         </div>
       </section>

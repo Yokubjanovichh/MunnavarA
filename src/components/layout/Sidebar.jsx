@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import styles from "./Sidebar.module.css";
-import { useAuthStore } from "@/store/authStore";
+import { useDispatch, useSelector } from "react-redux";
+import { logout, selectRole } from "@/features/auth/authSlice";
 import Logo from "@/assets/icons/Logo.svg";
 
 function Icon({ name }) {
@@ -394,8 +395,8 @@ const SECTIONS = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const role = useAuthStore((s) => s.role);
-  const logout = useAuthStore((s) => s.logout);
+  const dispatch = useDispatch();
+  const role = useSelector(selectRole);
 
   return (
     <aside className={styles.sidebar}>
@@ -442,7 +443,7 @@ export default function Sidebar() {
           type="button"
           className={styles.link}
           onClick={() => {
-            logout();
+            dispatch(logout());
             navigate("/login", { replace: true });
           }}
         >

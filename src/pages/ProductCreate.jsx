@@ -1,8 +1,8 @@
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import styles from "./ProductCreate.module.css";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { useProductStore } from "@/store/productStore";
+import { useCreateProductMutation } from "@/services/catalogApi";
 
 function ChevronIcon({ open }) {
   return (
@@ -45,26 +45,6 @@ function InfoIcon() {
   );
 }
 
-function PhotoIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M8.75 4.08333H8.75667M0.75 9.41666L4.08333 6.08333C4.702 5.488 5.46467 5.488 6.08333 6.08333L9.41667 9.41666M8.08333 8.08333L8.75 7.41666C9.36867 6.82133 10.1313 6.82133 10.75 7.41666L12.75 9.41666M0.75 2.75C0.75 2.21957 0.960714 1.71086 1.33579 1.33579C1.71086 0.960714 2.21957 0.75 2.75 0.75H10.75C11.2804 0.75 11.7891 0.960714 12.1642 1.33579C12.5393 1.71086 12.75 2.21957 12.75 2.75V10.75C12.75 11.2804 12.5393 11.7891 12.1642 12.1642C11.7891 12.5393 11.2804 12.75 10.75 12.75H2.75C2.21957 12.75 1.71086 12.5393 1.33579 12.1642C0.960714 11.7891 0.75 11.2804 0.75 10.75V2.75Z"
-        stroke="black"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function Section({ title, icon, open, onToggle, children, contentId }) {
   return (
     <section className={styles.section}>
@@ -94,43 +74,71 @@ function Section({ title, icon, open, onToggle, children, contentId }) {
 }
 
 export default function ProductCreate() {
-  const createProduct = useProductStore((s) => s.createProduct);
-  const isLoading = useProductStore((s) => s.isLoading);
+  const [createProduct, { isLoading }] = useCreateProductMutation();
 
-  const [productName, setProductName] = useState("Suv 25 litr");
-  const [productId, setProductId] = useState("1231823123");
-  const sizeOptions = useMemo(() => ["5-L", "10-L", "19-L", "25-L"], []);
-  const [size, setSize] = useState("25-L");
-  const [qty, setQty] = useState("100-Dona");
+  const [name, setName] = useState("");
+  const productTypes = useMemo(
+    () => [
+      { value: "water", label: "Suv" },
+      { value: "container", label: "Tara" },
+      { value: "equipment", label: "Uskuna" },
+    ],
+    [],
+  );
+  const [type, setType] = useState("water");
+  const [price, setPrice] = useState("");
 
-  const fileInputRef = useRef(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [imageUrl, setImageUrl] = useState("");
+  const materialOptions = useMemo(
+    () => [
+      { value: "PC", label: "PC" },
+      { value: "PET", label: "PET" },
+    ],
+    [],
+  );
+
+  const [waterVolume, setWaterVolume] = useState("19");
+  const [waterMaterial, setWaterMaterial] = useState("PC");
+
+  const [containerVolume, setContainerVolume] = useState("19");
+  const [containerMaterial, setContainerMaterial] = useState("PC");
 
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   const [infoOpen, setInfoOpen] = useState(true);
-  const [photoOpen, setPhotoOpen] = useState(true);
+  const [extraOpen, setExtraOpen] = useState(true);
 
   const infoId = useId();
-  const photoId = useId();
+  const extraId = useId();
 
-  const onPickFile = () => fileInputRef.current?.click();
+  const canSubmit = useMemo(() => name.trim().length > 0, [name]);
 
-  const onFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const formatMoneySpaces = (raw) => {
+    const digits = String(raw ?? "")
+      .replace(/\s+/g, "")
+      .replace(/\D+/g, "");
+    if (!digits) return "";
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  };
 
-    setImageFile(file);
-    setSuccess(false);
-    setError(null);
+  const parseMoneyToInt = (raw) => {
+    const digits = String(raw ?? "")
+      .replace(/\s+/g, "")
+      .replace(/\D+/g, "");
+    if (!digits) return null;
+    const x = Number.parseInt(digits, 10);
+    return Number.isFinite(x) ? x : null;
+  };
 
-    const nextUrl = URL.createObjectURL(file);
-    setImageUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return nextUrl;
-    });
+  const parseLiters = (raw) => {
+    const s = String(raw ?? "")
+      .trim()
+      .replace(",", ".");
+    if (!s) return null;
+    const x = Number.parseFloat(s);
+    if (!Number.isFinite(x)) return null;
+    if (x < 0) return null;
+    return x;
   };
 
   const onSubmit = async (e) => {
@@ -138,15 +146,51 @@ export default function ProductCreate() {
     setError(null);
     setSuccess(false);
 
-    try {
-      const fd = new FormData();
-      fd.append("name", productName.trim());
-      fd.append("productId", String(productId).trim());
-      fd.append("size", size);
-      fd.append("qty", qty.trim());
-      if (imageFile) fd.append("image", imageFile);
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
 
-      await createProduct(fd);
+    const parsedPrice = parseMoneyToInt(price);
+    if (parsedPrice === null) {
+      setError("Narx noto‘g‘ri kiritildi");
+      return;
+    }
+
+    const finalPrice = parsedPrice;
+
+    const waterLiters = type === "water" ? parseLiters(waterVolume) : null;
+    const containerLiters =
+      type === "container" ? parseLiters(containerVolume) : null;
+
+    if (type === "water" && waterLiters === null) {
+      setError("Hajm (litr) noto‘g‘ri kiritildi");
+      return;
+    }
+
+    if (type === "container" && containerLiters === null) {
+      setError("Hajm (litr) noto‘g‘ri kiritildi");
+      return;
+    }
+
+    try {
+      const payload = {
+        name: trimmedName,
+        type,
+        price: finalPrice,
+      };
+
+      if (type === "water") {
+        payload.attributes = {
+          volume_l: waterLiters,
+          material: waterMaterial,
+        };
+      } else if (type === "container") {
+        payload.attributes = {
+          volume_l: containerLiters,
+          material: containerMaterial,
+        };
+      }
+
+      await createProduct(payload).unwrap();
       setSuccess(true);
     } catch (err) {
       console.warn("createProduct failed", err);
@@ -192,45 +236,43 @@ export default function ProductCreate() {
             <label className={styles.field}>
               <div className={styles.label}>Mahsulot nomi</div>
               <Input
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Mahsulot nomi"
                 size="small"
               />
             </label>
 
             <label className={styles.field}>
-              <div className={styles.label}>Hajmi litrda</div>
+              <div className={styles.label}>Mahsulot turi</div>
               <select
                 className={styles.select}
-                value={size}
-                onChange={(e) => setSize(e.target.value)}
+                value={type}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setType(next);
+                }}
               >
-                {sizeOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
+                {productTypes.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
             </label>
 
             <label className={styles.field}>
-              <div className={styles.label}>Mahsulot ID</div>
+              <div className={styles.label}>Narx</div>
               <Input
-                value={productId}
-                onChange={(e) => setProductId(e.target.value)}
-                placeholder="Mahsulot ID"
+                value={price}
+                onChange={(e) => {
+                  const next = String(e.target.value ?? "");
+                  const digits = next.replace(/\s+/g, "").replace(/\D+/g, "");
+                  setPrice(formatMoneySpaces(digits));
+                }}
+                onBlur={() => setPrice((v) => formatMoneySpaces(v) || "0")}
+                placeholder="0"
                 inputMode="numeric"
-                size="small"
-              />
-            </label>
-
-            <label className={styles.field}>
-              <div className={styles.label}>Miqdor</div>
-              <Input
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                placeholder="Masalan: 100-Dona"
                 size="small"
               />
             </label>
@@ -238,52 +280,81 @@ export default function ProductCreate() {
         </Section>
 
         <Section
-          title="Photo Card"
-          icon={<PhotoIcon />}
-          open={photoOpen}
-          onToggle={() => setPhotoOpen((v) => !v)}
-          contentId={photoId}
+          title="Qo‘shimcha ma’lumot"
+          icon={<InfoIcon />}
+          open={extraOpen}
+          onToggle={() => setExtraOpen((v) => !v)}
+          contentId={extraId}
         >
-          <div className={styles.photoWrap}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className={styles.fileInput}
-              onChange={onFileChange}
-            />
+          {type === "water" ? (
+            <div className={styles.grid}>
+              <label className={styles.field}>
+                <div className={styles.label}>Hajmi (litr)</div>
+                <Input
+                  value={waterVolume}
+                  onChange={(e) => {
+                    const next = String(e.target.value ?? "");
+                    const cleaned = next.replace(/[^\d.,]/g, "");
+                    setWaterVolume(cleaned);
+                  }}
+                  placeholder="Masalan: 19"
+                  inputMode="decimal"
+                  size="small"
+                />
+              </label>
 
-            <button
-              type="button"
-              className={styles.dropzone}
-              onClick={onPickFile}
-              data-tooltip="Rasm yuklash"
-            >
-              {imageUrl ? (
-                <img className={styles.preview} src={imageUrl} alt="Selected" />
-              ) : (
-                <div className={styles.dropInner}>
-                  <div className={styles.plus} aria-hidden="true">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 12 12"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M4 5.75H7.5M5.75 4V7.5M0.5 5.75C0.5 6.43944 0.635795 7.12213 0.899632 7.75909C1.16347 8.39605 1.55018 8.9748 2.03769 9.46231C2.5252 9.94982 3.10395 10.3365 3.74091 10.6004C4.37787 10.8642 5.06056 11 5.75 11C6.43944 11 7.12213 10.8642 7.75909 10.6004C8.39605 10.3365 8.9748 9.94982 9.46231 9.46231C9.94982 8.9748 10.3365 8.39605 10.6004 7.75909C10.8642 7.12213 11 6.43944 11 5.75C11 5.06056 10.8642 4.37787 10.6004 3.74091C10.3365 3.10395 9.94982 2.5252 9.46231 2.03769C8.9748 1.55018 8.39605 1.16347 7.75909 0.899633C7.12213 0.635795 6.43944 0.5 5.75 0.5C5.06056 0.5 4.37787 0.635795 3.74091 0.899633C3.10395 1.16347 2.5252 1.55018 2.03769 2.03769C1.55018 2.5252 1.16347 3.10395 0.899632 3.74091C0.635795 4.37787 0.5 5.06056 0.5 5.75Z"
-                        stroke="#A6AAAF"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <div className={styles.dropText}>Rasm kiritish</div>
-                </div>
-              )}
-            </button>
-          </div>
+              <label className={styles.field}>
+                <div className={styles.label}>Tara materiali</div>
+                <select
+                  className={styles.select}
+                  value={waterMaterial}
+                  onChange={(e) => setWaterMaterial(e.target.value)}
+                >
+                  {materialOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : type === "container" ? (
+            <div className={styles.grid}>
+              <label className={styles.field}>
+                <div className={styles.label}>Hajmi (litr)</div>
+                <Input
+                  value={containerVolume}
+                  onChange={(e) => {
+                    const next = String(e.target.value ?? "");
+                    const cleaned = next.replace(/[^\d.,]/g, "");
+                    setContainerVolume(cleaned);
+                  }}
+                  placeholder="Masalan: 19"
+                  inputMode="decimal"
+                  size="small"
+                />
+              </label>
+
+              <label className={styles.field}>
+                <div className={styles.label}>Material</div>
+                <select
+                  className={styles.select}
+                  value={containerMaterial}
+                  onChange={(e) => setContainerMaterial(e.target.value)}
+                >
+                  {materialOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : (
+            <div className={styles.helper}>
+              Ushbu tur uchun qo‘shimcha ma’lumot talab qilinmaydi.
+            </div>
+          )}
         </Section>
 
         {error ? <div className={styles.error}>{error}</div> : null}
@@ -292,7 +363,7 @@ export default function ProductCreate() {
         ) : null}
 
         <div className={styles.actions}>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={!canSubmit || isLoading}>
             Mahsulot kiritish
           </Button>
         </div>

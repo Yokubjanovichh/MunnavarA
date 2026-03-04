@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "@/services/api";
+import { useEffect, useMemo, useState } from "react";
+import { useGetSalesAnalyticsQuery } from "@/services/analyticsApi";
 import { getMockSalesAnalytics, sleep } from "./mockSalesData";
 import { computeAdaptiveYMax } from "./utils/yAxisScale";
 
@@ -301,7 +301,7 @@ function aggregateFallback(intervals) {
 
 export default function useSalesAnalytics() {
   const [activeFilter, setActiveFilter] = useState("1-Yil");
-  const [loading, setLoading] = useState(false);
+  const [mockLoading, setMockLoading] = useState(false);
   const [summaryData, setSummaryData] = useState({
     revenue: 0,
     expense: 0,
@@ -313,129 +313,133 @@ export default function useSalesAnalytics() {
   const [chartData, setChartData] = useState({ intervals: [] });
   const [yScaleMax, setYScaleMax] = useState(() => computeAdaptiveYMax([]));
 
-  const abortRef = useRef(null);
-
   const meta = useMemo(() => buildRequestMeta(activeFilter), [activeFilter]);
 
+  const { data: liveData, isFetching: loading, error: liveError } =
+    useGetSalesAnalyticsQuery(
+      {
+        from: toISO(meta.from),
+        to: toISO(meta.to),
+        granularity: meta.granularity,
+      },
+      { skip: USE_MOCK || AUTO_MOCK_IF_NO_API },
+    );
+
   useEffect(() => {
-    const run = async () => {
-      if (abortRef.current) abortRef.current.abort();
-      const ac = new AbortController();
-      abortRef.current = ac;
+    if (!USE_MOCK && !AUTO_MOCK_IF_NO_API) return;
+    let cancelled = false;
 
-      setLoading(true);
-
+    const runMock = async () => {
+      setMockLoading(true);
       try {
         const generated = buildIntervals(meta);
+        await sleep(260);
+        if (cancelled) return;
 
-        if (USE_MOCK || AUTO_MOCK_IF_NO_API) {
-          await sleep(260, ac.signal);
-          const mock = getMockSalesAnalytics(meta, generated);
-
-          setSummaryData(
-            normalizeTotals(
-              { totals: mock.totals },
-              aggregateFallback(mock.intervals),
-            ),
-          );
-          setChartData({ intervals: mock.intervals });
-
-          setYScaleMax(computeAdaptiveYMax(mock.intervals));
-          return;
-        }
-
-        const res = await api.get("/analytics/sales", {
-          signal: ac.signal,
-          params: {
-            from: toISO(meta.from),
-            to: toISO(meta.to),
-            granularity: meta.granularity,
-          },
-        });
-
-        const raw = res?.data;
-        const rawIntervals = pickIntervalsArray(raw).map((x) =>
-          normalizePoint(x, meta.granularity),
+        const mock = getMockSalesAnalytics(meta, generated);
+        setSummaryData(
+          normalizeTotals(
+            { totals: mock.totals },
+            aggregateFallback(mock.intervals),
+          ),
         );
-
-        const byMatchKey = new Map(
-          rawIntervals
-            .filter((x) => x.matchKey)
-            .map((x) => [String(x.matchKey), x]),
-        );
-
-        const byLabel = new Map(
-          rawIntervals.map((x) => [String(x.label ?? "").toLowerCase(), x]),
-        );
-
-        const canIndexMatch = rawIntervals.length === generated.length;
-
-        const merged = generated.map((g, idx) => {
-          const hit =
-            (g?.matchKey ? byMatchKey.get(String(g.matchKey)) : null) ??
-            byLabel.get(String(g.label).toLowerCase()) ??
-            (canIndexMatch ? rawIntervals[idx] : null);
-
-          return {
-            ...g,
-            sotuv: hit?.sotuv ?? 0,
-            rasxod: hit?.rasxod ?? 0,
-          };
-        });
-
-        const fallbackTotals = aggregateFallback(merged);
-        const totals = normalizeTotals(raw, fallbackTotals);
-
-        setSummaryData(totals);
-        setChartData({ intervals: merged });
-
-        setYScaleMax(computeAdaptiveYMax(merged));
-      } catch (e) {
-        if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED") return;
-
-        const generated = buildIntervals(meta);
-
-        if (USE_MOCK_FALLBACK) {
-          const mock = getMockSalesAnalytics(meta, generated);
-          setSummaryData(
-            normalizeTotals(
-              { totals: mock.totals },
-              aggregateFallback(mock.intervals),
-            ),
-          );
-          setChartData({ intervals: mock.intervals });
-          setYScaleMax(computeAdaptiveYMax(mock.intervals));
-          return;
-        }
-
-        // Graceful fallback: keep generated intervals but show zeros + empty state
-        const zeros = generated.map((g) => ({
-          ...g,
-          sotuv: 0,
-          rasxod: 0,
-        }));
-
-        setSummaryData({
-          revenue: 0,
-          expense: 0,
-          customers: 0,
-          couriers: 0,
-          orders: 0,
-          reviews: 0,
-        });
-        setChartData({ intervals: zeros });
-        setYScaleMax(computeAdaptiveYMax(zeros));
+        setChartData({ intervals: mock.intervals });
+        setYScaleMax(computeAdaptiveYMax(mock.intervals));
       } finally {
-        setLoading(false);
+        if (!cancelled) setMockLoading(false);
       }
     };
 
-    run();
+    runMock();
 
     return () => {
-      if (abortRef.current) abortRef.current.abort();
+      cancelled = true;
     };
   }, [meta]);
+
+  useEffect(() => {
+    if (USE_MOCK || AUTO_MOCK_IF_NO_API) return;
+    if (liveError) return;
+    if (!liveData) return;
+
+    const generated = buildIntervals(meta);
+
+    const raw = liveData;
+    const rawIntervals = pickIntervalsArray(raw).map((x) =>
+      normalizePoint(x, meta.granularity),
+    );
+
+    const byMatchKey = new Map(
+      rawIntervals
+        .filter((x) => x.matchKey)
+        .map((x) => [String(x.matchKey), x]),
+    );
+
+    const byLabel = new Map(
+      rawIntervals.map((x) => [String(x.label ?? "").toLowerCase(), x]),
+    );
+
+    const canIndexMatch = rawIntervals.length === generated.length;
+
+    const merged = generated.map((g, idx) => {
+      const hit =
+        (g?.matchKey ? byMatchKey.get(String(g.matchKey)) : null) ??
+        byLabel.get(String(g.label).toLowerCase()) ??
+        (canIndexMatch ? rawIntervals[idx] : null);
+
+      return {
+        ...g,
+        sotuv: hit?.sotuv ?? 0,
+        rasxod: hit?.rasxod ?? 0,
+      };
+    });
+
+    const fallbackTotals = aggregateFallback(merged);
+    const totals = normalizeTotals(raw, fallbackTotals);
+
+    setSummaryData(totals);
+    setChartData({ intervals: merged });
+
+    setYScaleMax(computeAdaptiveYMax(merged));
+  }, [liveData, liveError, meta]);
+
+  useEffect(() => {
+    if (USE_MOCK || AUTO_MOCK_IF_NO_API) return;
+    if (!liveError) return;
+
+    const generated = buildIntervals(meta);
+
+    if (USE_MOCK_FALLBACK) {
+      const mock = getMockSalesAnalytics(meta, generated);
+      setSummaryData(
+        normalizeTotals(
+          { totals: mock.totals },
+          aggregateFallback(mock.intervals),
+        ),
+      );
+      setChartData({ intervals: mock.intervals });
+      setYScaleMax(computeAdaptiveYMax(mock.intervals));
+      return;
+    }
+
+    // Graceful fallback: keep generated intervals but show zeros + empty state
+    const zeros = generated.map((g) => ({
+      ...g,
+      sotuv: 0,
+      rasxod: 0,
+    }));
+
+    setSummaryData({
+      revenue: 0,
+      expense: 0,
+      customers: 0,
+      couriers: 0,
+      orders: 0,
+      reviews: 0,
+    });
+    setChartData({ intervals: zeros });
+    setYScaleMax(computeAdaptiveYMax(zeros));
+  }, [liveError, meta]);
 
   const empty = useMemo(() => {
     const intervals = chartData?.intervals ?? [];
@@ -457,7 +461,7 @@ export default function useSalesAnalytics() {
     summaryData,
     chartData,
     yScaleMax,
-    loading,
+    loading: loading || mockLoading,
     empty,
   };
 }
